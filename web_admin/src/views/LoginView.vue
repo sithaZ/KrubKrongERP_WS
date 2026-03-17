@@ -74,7 +74,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
-// --- Typewriter Logic ---
+
 const fullText = "គ្រប់គ្រង";
 const animatedText = ref("");
 let isDeleting = false;
@@ -98,26 +98,41 @@ const typeEffect = () => {
 
 onMounted(() => { typeEffect(); });
 
-// --- Login Logic ---
+
 const username = ref('');
 const password = ref('');
 const errorMessage = ref('');
 const isLoading = ref(false);
 const router = useRouter();
 
+
 const handleLogin = async () => {
-  isLoading.value = true;
-  errorMessage.value = '';
   try {
-    const response = await axios.post('http://localhost:3000/auth/login', {
-      username: username.value, password: password.value,
+    const response = await fetch('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username.value, password: password.value }),
     });
-    localStorage.setItem('access_token', response.data.access_token);
-    router.push('/');   
-  } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || 'Access Denied: Invalid Credentials';
-  } finally {
-    isLoading.value = false;
+
+    if (response.ok) {
+      const data = await response.json();
+      
+     
+      if (data.role === 'STAFF') {
+        alert('Access Denied: Staff members must log in using the Mobile POS App.');
+        return; 
+      }
+      
+      
+      localStorage.setItem('access_token', data.access_token);
+      router.push('/dashboard');
+      
+    } else {
+      const errorData = await response.json();
+      alert(errorData.message); 
+    }
+  } catch (error) {
+    console.error('Login failed:', error);
   }
 };
 </script>

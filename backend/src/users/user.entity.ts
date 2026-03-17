@@ -11,6 +11,14 @@ export class User {
   @Column()
   password: string;
 
+
+  //roles
+  @Column({ default: 'STAFF' })
+  role: string;
+  //active status
+  @Column({ default: true })
+  isActive: boolean;
+
   @Column({ nullable: true })
   email: string;
 
