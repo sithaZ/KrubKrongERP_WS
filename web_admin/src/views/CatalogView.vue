@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-// Logic for the Catalog will go here
+
 </script>
 
 <style scoped>

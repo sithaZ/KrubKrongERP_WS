@@ -221,7 +221,7 @@ onMounted(fetchUsers);
 </script>
 
 <style scoped>
-/* Keeping all your exact same gorgeous CSS styles from before! */
+
 .content-area { padding: 3.5rem 3rem; max-width: 1500px; margin: 0 auto; animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem; }

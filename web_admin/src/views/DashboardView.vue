@@ -50,11 +50,11 @@
 </template>
 
 <script setup lang="ts">
-// You don't need any complex logic in here right now!
+
 </script>
 
 <style scoped>
-/* These are your exact styles for the Dashboard Cards */
+
 .content-area {
   padding: 2.5rem;
   max-width: 1400px;
