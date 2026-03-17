@@ -1,78 +1,87 @@
 <template>
-  <div class="login-container">
-    
-    <div class="animated-bg-text">
-      {{ animatedText }}<span class="blinking-cursor">|</span>
-    </div>
+  <div class="login-page">
+    <div class="bg-mesh"></div>
 
-    <div class="login-box" :style="boxStyle">
-      
-      <div 
-        class="brand-header" 
-        @mousedown="startDrag" 
-        :class="{ 'is-grabbing': isDragging }"
-      >
-        <h2>KrubKrong ERP Login</h2>
-        <p class="subtitle">Secure access to your business dashboard</p>
+    <div class="split-layout">
+      <div class="form-panel">
+        <div class="glass-card">
+          <div class="card-header">
+            
+            <h3>Authentication</h3>
+            <p>Enter your credentials to access KrubKrong ERP</p>
+          </div>
+
+          <form @submit.prevent="handleLogin" class="modern-form">
+            <div class="input-wrapper">
+              <input type="text" v-model="username" required placeholder=" " />
+              <label>Username</label>
+              <div class="underline"></div>
+            </div>
+
+            <div class="input-wrapper">
+              <input type="password" v-model="password" required placeholder=" " />
+              <label>Password</label>
+              <div class="underline"></div>
+            </div>
+
+            <transition name="fade">
+              <div v-if="errorMessage" class="error-toast">
+                <span>{{ errorMessage }}</span>
+              </div>
+            </transition>
+
+            <button type="submit" :disabled="isLoading" class="glow-btn">
+              <div class="btn-content" v-if="!isLoading">
+                <span>SIGN IN TO SYSTEM</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </div>
+              <span v-else class="loader"></span>
+            </button>
+          </form>
+
+          <footer class="form-footer">
+            <p>គ្រប់គ្រង ERP &copy; 2026 • SECURE INFRASTRUCTURE</p>
+          </footer>
+        </div>
       </div>
 
-      <form @submit.prevent="handleLogin" class="auth-form">
-        <div class="input-group">
-          <label>Username</label>
-          <div class="input-wrapper">
-            <input 
-              type="text" 
-              v-model="username" 
-              required 
-              placeholder="Enter your username" 
-            />
+      <div class="branding-panel">
+        <div class="image-overlay"></div>
+        
+        <div class="panel-content">
+          <div class="animation-container">
+            <span class="animated-label">STATUS: SYSTEM_READY</span>
+            <h1 class="typing-text">
+              {{ animatedText }}<span class="cursor">_</span>
+            </h1>
+          </div>
+          
+          <div class="brand-info">
+            <div class="logo-box">K</div>
+            <div class="text-box">
+              <h2>KRUBKRONG <span class="highlight">ERP</span></h2>
+              <p>Cambodia's Leading SME Solution</p>
+            </div>
           </div>
         </div>
-
-        <div class="input-group">
-          <label>Password</label>
-          <div class="input-wrapper">
-            <input 
-              type="password" 
-              v-model="password" 
-              required 
-              placeholder="Enter your password" 
-            />
-          </div>
-        </div>
-
-        <div v-if="errorMessage" class="error-banner">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          {{ errorMessage }}
-        </div>
-
-        <button type="submit" :disabled="isLoading" class="submit-btn">
-          <span v-if="isLoading" class="loader"></span>
-          <span>{{ isLoading ? 'Authenticating...' : 'Secure Login' }}</span>
-        </button>
-      </form>
-      
-      <div class="card-footer">
-        <p>គ្រប់គ្រង ERP © 2026</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
-// --- Animated Background Logic ---
+// --- Typewriter Logic ---
 const fullText = "គ្រប់គ្រង";
 const animatedText = ref("");
 let isDeleting = false;
 let charIndex = 0;
 
 const typeEffect = () => {
-  const currentSpeed = isDeleting ? 100 : 200; 
-
+  const currentSpeed = isDeleting ? 80 : 150; 
   if (!isDeleting && charIndex <= fullText.length) {
     animatedText.value = fullText.substring(0, charIndex);
     charIndex++;
@@ -83,13 +92,11 @@ const typeEffect = () => {
     setTimeout(typeEffect, currentSpeed);
   } else {
     isDeleting = !isDeleting;
-    setTimeout(typeEffect, isDeleting ? 1500 : 500); 
+    setTimeout(typeEffect, isDeleting ? 2000 : 500); 
   }
 };
 
-onMounted(() => {
-  typeEffect(); 
-});
+onMounted(() => { typeEffect(); });
 
 // --- Login Logic ---
 const username = ref('');
@@ -101,238 +108,171 @@ const router = useRouter();
 const handleLogin = async () => {
   isLoading.value = true;
   errorMessage.value = '';
-
   try {
     const response = await axios.post('http://localhost:3000/auth/login', {
-      username: username.value,
-      password: password.value,
+      username: username.value, password: password.value,
     });
     localStorage.setItem('access_token', response.data.access_token);
     router.push('/');   
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || 'Failed to login. Please try again.';
+    errorMessage.value = error.response?.data?.message || 'Access Denied: Invalid Credentials';
   } finally {
     isLoading.value = false;
   }
 };
-
-// --- Dragging Logic ---
-const position = ref({ x: 0, y: 0 });
-const isDragging = ref(false);
-const dragOffset = { x: 0, y: 0 };
-
-const startDrag = (event: MouseEvent) => {
-  isDragging.value = true;
-  dragOffset.x = event.clientX - position.value.x;
-  dragOffset.y = event.clientY - position.value.y;
-  
-  document.addEventListener('mousemove', onDrag);
-  document.addEventListener('mouseup', stopDrag);
-};
-
-const onDrag = (event: MouseEvent) => {
-  if (!isDragging.value) return;
-  position.value.x = event.clientX - dragOffset.x;
-  position.value.y = event.clientY - dragOffset.y;
-};
-
-const stopDrag = () => {
-  isDragging.value = false;
-  document.removeEventListener('mousemove', onDrag);
-  document.removeEventListener('mouseup', stopDrag);
-};
-
-const boxStyle = computed(() => ({
-  transform: `translate(${position.value.x}px, ${position.value.y}px)`,
-}));
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Kantumruy+Pro:wght@300;700&display=swap');
 
-.login-container {
+.login-page {
+  height: 100vh;
+  width: 100vw;
+  background: #0f172a;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 1rem;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  overflow: hidden; 
   position: relative;
-  
-
-  background-image: 
-    linear-gradient(rgba(33, 43, 99, 0.6), rgba(33, 43, 99, 0.85)), 
-    url('../../assets/img/LoginBG.png'); 
-  background-size: cover;       
-  background-position: center;  
-  background-repeat: no-repeat; 
 }
 
-
-.animated-bg-text {
+.bg-mesh {
   position: absolute;
-  top: 15%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 10vw; 
-  font-weight: 350;
-  color: rgba(255, 255, 255, 0.4); 
-  white-space: nowrap;
-  pointer-events: none; 
-  z-index: 1; 
-  font-family: 'Kantumruy Pro', 'Suwannaphum', 'Hanuman', sans-serif; 
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.3) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.8) 0px, transparent 50%);
+  z-index: 1;
 }
 
-
-.blinking-cursor {
-  font-weight: 100;
-  color: rgba(255, 255, 255, 0.2);
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-
-.login-box {
-  background: #ffffff;
-  padding: 3rem 2.5rem; 
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(15, 20, 50, 0.5); /* Shadow tinted with navy */
-  width: 100%;
-  max-width: 420px;
+.split-layout {
   display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.2s ease;
-  z-index: 10; 
-  position: relative;
-}
-
-
-.brand-header {
-  text-align: center;
-  margin-bottom: 2rem;
-  cursor: grab; 
-  user-select: none; 
-  padding-bottom: 0.5rem; 
-}
-.brand-header.is-grabbing {
-  cursor: grabbing; 
-}
-
-.brand-header h2 {
-  color: #283375;
-  font-size: 1.75rem;
-  font-weight: 800;
-  margin: 0 0 0.5rem 0;
-  letter-spacing: -0.025em;
-}
-.subtitle {
-  color: #64748b;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-.input-group label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #283375;
-  margin-bottom: 0.5rem;
-}
-.input-wrapper input {
   width: 100%;
-  padding: 0.875rem 1rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 1rem;
-  color: #1e293b;
-  background-color: #f8fafc;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
-}
-.input-wrapper input:focus {
-  outline: none;
-  border-color: #4B6BB3; 
-  background-color: #ffffff;
-  box-shadow: 0 0 0 4px rgba(75, 107, 179, 0.15); 
-}
-.input-wrapper input::placeholder {
-  color: #94a3b8;
+  z-index: 2;
 }
 
-
-.submit-btn {
+/* --- Left Form Side --- */
+.form-panel {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  padding: 2rem;
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.glass-card {
   width: 100%;
-  padding: 0.875rem;
-  background-color: #283375; 
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-  margin-top: 0.5rem;
-}
-.submit-btn:hover:not(:disabled) {
-  background-color: #1a2254;
-}
-.submit-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-.submit-btn:disabled {
-  background-color: #74A7E6; 
-  cursor: not-allowed;
+  max-width: 400px;
+  padding: 3rem;
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.card-header h3 { color: white; font-size: 1.75rem; margin-bottom: 0.5rem; }
+.card-header p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 2.5rem; }
 
-.error-banner {
+/* --- Right Branding Side (IMAGE BACKGROUND) --- */
+.branding-panel {
+  flex: 1.4;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background-color: #fef2f2;
-  color: #dc2626;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border: 1px solid #fecaca;
+  justify-content: center;
+  position: relative;
+  background-image: url('../../assets/img/LoginBG.png');
+  background-size: cover;
+  background-position: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.image-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to right, #0f172a 0%, rgba(15, 23, 42, 0.4) 100%);
+  z-index: 1;
+}
+
+.panel-content {
+  position: relative;
+  z-index: 2;
+  text-align: left;
+  padding: 4rem;
+}
+
+.typing-text {
+  font-family: 'Kantumruy Pro', sans-serif;
+  font-size: 5rem;
+  color: white;
+  margin: 0;
+  text-shadow: 0 0 40px rgba(56, 189, 248, 0.6);
+}
+
+.animated-label {
+  color: #38bdf8;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+}
+
+.logo-box {
+  width: 50px; height: 50px;
+  background: white; color: #0f172a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; font-weight: 800; border-radius: 10px;
+}
+
+.brand-info { display: flex; align-items: center; gap: 1.2rem; margin-top: 2rem;}
+.brand-info h2 { color: white; margin: 0; font-size: 1.4rem; }
+.highlight { color: #38bdf8; }
+.brand-info p { color: #cbd5e1; margin: 0; font-size: 0.9rem;}
+
+/* --- Form Elements --- */
+.modern-form { display: flex; flex-direction: column; gap: 2.2rem; }
+.input-wrapper { position: relative; }
+.input-wrapper input {
+  width: 100%; padding: 10px 0; font-size: 1rem; color: white;
+  background: transparent; border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2); outline: none;
+}
+.input-wrapper label {
+  position: absolute; top: 10px; left: 0; color: #64748b;
+  pointer-events: none; transition: 0.3s;
+}
+.input-wrapper input:focus ~ label,
+.input-wrapper input:not(:placeholder-shown) ~ label {
+  top: -20px; font-size: 0.8rem; color: #38bdf8;
+}
+.underline {
+  position: absolute; bottom: 0; left: 0; width: 0%; height: 2px;
+  background: #38bdf8; transition: 0.4s;
+}
+.input-wrapper input:focus ~ .underline { width: 100%; }
+
+.glow-btn {
+  background: #38bdf8; color: #0f172a; border: none; padding: 1rem;
+  border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s;
+}
+.glow-btn:hover { box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); transform: translateY(-2px); }
+.btn-content { display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+.error-toast {
+  background: rgba(239, 68, 68, 0.15); border-left: 4px solid #ef4444;
+  color: #f87171; padding: 0.75rem; font-size: 0.85rem; border-radius: 4px;
+}
+
+.form-footer { margin-top: 3rem; text-align: center; }
+.form-footer p { font-size: 0.65rem; color: #475569; letter-spacing: 0.1em; }
+
+@keyframes blink { 50% { opacity: 0; } }
+.cursor { animation: blink 0.8s infinite; color: #38bdf8; }
 
 .loader {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ffffff;
-  border-bottom-color: transparent;
-  border-radius: 50%;
-  display: inline-block;
-  box-sizing: border-box;
-  animation: rotation 1s linear infinite;
+  width: 20px; height: 20px; border: 3px solid rgba(15, 23, 42, 0.3);
+  border-radius: 50%; border-top-color: #0f172a; animation: spin 1s linear infinite;
 }
-@keyframes rotation {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-
-.card-footer {
-  margin-top: 2rem;
-  text-align: center;
-  font-size: 0.75rem;
-  color: #94a3b8;
+@media (max-width: 1024px) {
+  .branding-panel { display: none; }
 }
 </style>
