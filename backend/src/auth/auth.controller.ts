@@ -12,6 +12,7 @@ export class AuthController {
   }
   @Post('register')
   register(@Body() signUpDto: Record<string, any>) {
-    return this.authService.register(signUpDto.username, signUpDto.password);
+    
+    return this.authService.register(signUpDto); 
   }
 }

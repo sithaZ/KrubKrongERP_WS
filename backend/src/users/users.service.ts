@@ -1,46 +1,57 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { User } from './user.entity';
-import * as bcrypt from 'bcrypt';
+import { EventsGateway } from '../events/events.gateway'; // 1. Import the WebSocket Gateway
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    @InjectModel(User.name) private userModel: Model<User>,
+    private eventsGateway: EventsGateway // 2. Inject the Gateway into the constructor
   ) {}
 
-  async create(userData: Partial<User>): Promise<User> {
-    const saltRounds = 10;
-    if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, saltRounds);
-    }
-    
-    const newUser = this.usersRepository.create(userData);
-    return this.usersRepository.save(newUser);
-  }
-  async update(id: string, updateData: Partial<User>): Promise<User | null> {
-    if (updateData.password) {
-      const saltRounds = 10;
-      updateData.password = await bcrypt.hash(updateData.password, saltRounds);
-    }
-    await this.usersRepository.update(id, updateData);
-    return this.usersRepository.findOne({ where: { id } });
+  async findAll(): Promise<User[]> {
+    return this.userModel.find().exec();
   }
 
-  // Get all users
-  findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+  async findOne(id: string): Promise<User> {
+    const user = await this.userModel.findById(id).exec();
+    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+    return user;
   }
+  
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
+
+  async findOneByUsername(username: string): Promise<User | null> {
+    return this.userModel.findOne({ username }).exec();
+  }
+
+  async create(userData: any): Promise<User> {
+    const newUser = new this.userModel(userData);
+    return newUser.save();
+  }
+
+ async update(id: string, updateData: any): Promise<User> {
+    const updatedUser = await this.userModel
+      
+      .findByIdAndUpdate(id, updateData, { returnDocument: 'after' }) 
+      .exec();
+      
+    if (!updatedUser) throw new NotFoundException(`User with ID ${id} not found`);
 
  
-  findOneByUsername(username: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { username } });
+    if (updateData.role) {
+      this.eventsGateway.notifyRoleChange(id, updatedUser.role);
+    }
+
+    return updatedUser;
   }
 
-  // Delete a user
   async remove(id: string): Promise<void> {
-    await this.usersRepository.delete(id);
+    const result = await this.userModel.findByIdAndDelete(id).exec();
+    if (!result) throw new NotFoundException(`User with ID ${id} not found`);
   }
 }

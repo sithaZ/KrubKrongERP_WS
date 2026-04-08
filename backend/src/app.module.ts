@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -7,15 +8,16 @@ import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost', 
-      port: 5432,
-      username: 'admin',
-      password: 'erp_pass',
-      database: 'erp_pos_db',
-      autoLoadEntities: true, 
-      synchronize: true,
+    ConfigModule.forRoot({
+      isGlobal: true, 
+    }),
+    // Connect to MongoDB using the URI from your .env file
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGO_URI'),
+      }),
+      inject: [ConfigService],
     }),
     UsersModule,
     AuthModule,
