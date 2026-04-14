@@ -6,14 +6,14 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
   },
   server: {
     port: 5173,
     proxy: {
       '/auth': 'http://localhost:3000',
-      '/users': 'http://localhost:3000'
-    }
-  }
+      '/users': 'http://localhost:3000',
+    },
+  },
 })

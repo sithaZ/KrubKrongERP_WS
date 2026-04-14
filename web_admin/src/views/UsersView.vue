@@ -12,7 +12,7 @@
     </div>
 
     <div class="erp-card toolbar-card">
-      <div class="toolbar-grid" style="grid-template-columns: minmax(220px, 1fr) 180px 180px 130px;">
+      <div class="toolbar-grid">
         <div class="form-group">
           <label>Search</label>
           <input
@@ -47,7 +47,7 @@
         </div>
 
         <div class="form-group">
-          <button @click="fetchEmployees" class="erp-btn-secondary">
+          <button @click="fetchEmployees" class="erp-btn-secondary" type="button">
             Refresh
           </button>
         </div>
@@ -56,16 +56,16 @@
 
     <div class="erp-card table-card">
       <div class="table-scroll">
-        <table class="erp-table">
+        <table class="erp-table employees-table">
           <thead>
             <tr>
-              <th style="width: 220px;">Employee</th>
-              <th style="width: 120px;">Code</th>
-              <th style="width: 150px;">Position</th>
-              <th style="width: 150px;">Department</th>
-              <th style="width: 140px;">Salary</th>
-              <th style="width: 120px;">Status</th>
-              <th style="width: 180px; text-align: right;">Actions</th>
+              <th>Employee</th>
+              <th>Code</th>
+              <th>Position</th>
+              <th>Department</th>
+              <th>Salary</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
 
@@ -84,14 +84,18 @@
                   <div class="user-avatar">
                     {{ employee.fullName?.charAt(0)?.toUpperCase() || 'E' }}
                   </div>
-                  <span :title="employee.fullName">{{ employee.fullName }}</span>
+                  <span :title="employee.fullName || 'Unknown Employee'">
+                    {{ employee.fullName || 'Unknown Employee' }}
+                  </span>
                 </div>
               </td>
 
-              <td class="muted">{{ employee.employeeCode }}</td>
+              <td class="muted">{{ employee.employeeCode || '-' }}</td>
               <td :title="employee.position || 'Staff'">{{ employee.position || 'Staff' }}</td>
               <td :title="employee.department || 'General'">{{ employee.department || 'General' }}</td>
-              <td>{{ employee.salaryType }} - ${{ Number(employee.baseSalary || 0).toFixed(2) }}</td>
+              <td class="salary-cell">
+                {{ employee.salaryType || 'monthly' }} - ${{ Number(employee.baseSalary || 0).toFixed(2) }}
+              </td>
 
               <td>
                 <span class="status-pill" :class="employee.isActive ? 'active' : 'inactive'">
@@ -102,10 +106,10 @@
 
               <td>
                 <div class="actions-inline">
-                  <button @click="openEditModal(employee)" class="erp-btn-soft">
+                  <button @click="openEditModal(employee)" class="erp-btn-soft" type="button">
                     Edit
                   </button>
-                  <button @click="deactivateEmployee(employee._id)" class="erp-btn-danger">
+                  <button @click="deactivateEmployee(employee._id)" class="erp-btn-danger" type="button">
                     Deactivate
                   </button>
                 </div>
@@ -126,43 +130,26 @@
             </p>
           </div>
 
-          <button @click="closeModal" class="close-btn">✕</button>
+          <button @click="closeModal" class="close-btn" type="button">✕</button>
         </div>
 
         <form @submit.prevent="saveEmployee" class="modal-form">
           <div class="form-row">
             <div class="form-group">
               <label>Full Name</label>
-              <input
-                v-model="formData.fullName"
-                type="text"
-                required
-                placeholder="e.g. Sok Dara"
-                class="erp-input"
-              />
+              <input v-model="formData.fullName" type="text" required placeholder="e.g. Sok Dara" class="erp-input" />
             </div>
 
             <div class="form-group">
               <label>Employee Code</label>
-              <input
-                v-model="formData.employeeCode"
-                type="text"
-                required
-                placeholder="e.g. EMP001"
-                class="erp-input"
-              />
+              <input v-model="formData.employeeCode" type="text" required placeholder="e.g. EMP001" class="erp-input" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>Position</label>
-              <input
-                v-model="formData.position"
-                type="text"
-                placeholder="e.g. Cashier"
-                class="erp-input"
-              />
+              <input v-model="formData.position" type="text" placeholder="e.g. Cashier" class="erp-input" />
             </div>
 
             <div class="form-group">
@@ -175,6 +162,7 @@
                 <option value="Finance">Finance</option>
                 <option value="IT">IT</option>
                 <option value="Admin">Admin</option>
+                <option value="General">General</option>
               </select>
             </div>
           </div>
@@ -190,35 +178,19 @@
 
             <div class="form-group">
               <label>Base Salary</label>
-              <input
-                v-model.number="formData.baseSalary"
-                type="number"
-                min="0"
-                required
-                placeholder="e.g. 300"
-                class="erp-input"
-              />
+              <input v-model.number="formData.baseSalary" type="number" min="0" required placeholder="e.g. 300" class="erp-input" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>Phone</label>
-              <input
-                v-model="formData.phone"
-                type="text"
-                placeholder="e.g. 095490904"
-                class="erp-input"
-              />
+              <input v-model="formData.phone" type="text" placeholder="e.g. 095490904" class="erp-input" />
             </div>
 
             <div class="form-group">
               <label>Hire Date</label>
-              <input
-                v-model="formData.hireDate"
-                type="date"
-                class="erp-input"
-              />
+              <input v-model="formData.hireDate" type="date" class="erp-input" />
             </div>
           </div>
 
@@ -245,33 +217,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-
+import { computed, onMounted, ref } from 'vue'
 
 type Employee = {
-  _id: string;
-  fullName: string;
-  employeeCode: string;
-  position?: string;
-  department?: string;
-  salaryType: 'daily' | 'monthly';
-  baseSalary: number;
-  isActive: boolean;
-  phone?: string;
-  hireDate?: string;
-};
+  _id: string
+  fullName: string
+  employeeCode: string
+  position?: string
+  department?: string
+  salaryType: 'daily' | 'monthly'
+  baseSalary: number
+  isActive: boolean
+  phone?: string
+  hireDate?: string
+}
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'http://localhost:3000/api'
 
-const employees = ref<Employee[]>([]);
-const isLoading = ref(true);
-const showModal = ref(false);
-const isEditing = ref(false);
-const currentEmployeeId = ref('');
+const employees = ref<Employee[]>([])
+const isLoading = ref(true)
+const showModal = ref(false)
+const isEditing = ref(false)
+const currentEmployeeId = ref('')
 
-const searchTerm = ref('');
-const statusFilter = ref('');
-const departmentFilter = ref('');
+const searchTerm = ref('')
+const statusFilter = ref('')
+const departmentFilter = ref('')
 
 const formData = ref({
   fullName: '',
@@ -283,76 +254,68 @@ const formData = ref({
   isActive: true,
   phone: '',
   hireDate: '',
-});
+})
 
 const getHeaders = () => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('access_token')
   return {
     'Content-Type': 'application/json',
     Authorization: token ? `Bearer ${token}` : '',
-  };
-};
+  }
+}
 
 const normalizeDate = (value?: string | Date) => {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toISOString().split('T')[0];
-};
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().split('T')[0]
+}
 
 const filteredEmployees = computed(() => {
-  const search = searchTerm.value.toLowerCase().trim();
+  const search = searchTerm.value.toLowerCase().trim()
 
   return employees.value.filter((employee) => {
-    const fullName = (employee.fullName || '').toLowerCase();
-    const employeeCode = (employee.employeeCode || '').toLowerCase();
-    const department = employee.department || 'General';
+    const fullName = (employee.fullName || '').toLowerCase()
+    const employeeCode = (employee.employeeCode || '').toLowerCase()
+    const department = employee.department || 'General'
 
     const matchSearch =
-      !search || fullName.includes(search) || employeeCode.includes(search);
+      !search || fullName.includes(search) || employeeCode.includes(search)
 
     const matchStatus =
       !statusFilter.value ||
       (statusFilter.value === 'active' && employee.isActive) ||
-      (statusFilter.value === 'inactive' && !employee.isActive);
+      (statusFilter.value === 'inactive' && !employee.isActive)
 
     const matchDepartment =
-      !departmentFilter.value || department === departmentFilter.value;
+      !departmentFilter.value || department === departmentFilter.value
 
-    return matchSearch && matchStatus && matchDepartment;
-  });
-});
+    return matchSearch && matchStatus && matchDepartment
+  })
+})
 
 const fetchEmployees = async () => {
-  isLoading.value = true;
-
+  isLoading.value = true
   try {
-    const res = await fetch(`${API_BASE}/employees`, {
-      headers: getHeaders(),
-    });
-
+    const res = await fetch(`${API_BASE}/employees`, { headers: getHeaders() })
     if (!res.ok) {
-      const text = await res.text();
-      console.error('Failed to fetch employees:', text);
-      alert('Failed to load employees.');
-      employees.value = [];
-      return;
+      console.error('Failed to fetch employees:', await res.text())
+      employees.value = []
+      return
     }
-
-    const data = await res.json();
-    employees.value = Array.isArray(data) ? data : [];
+    const data = await res.json()
+    employees.value = Array.isArray(data) ? data : []
   } catch (error) {
-    console.error('Fetch employees error:', error);
-    alert('Could not connect to employee API.');
-    employees.value = [];
+    console.error('Fetch employees error:', error)
+    employees.value = []
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 
 const openAddModal = () => {
-  isEditing.value = false;
-  currentEmployeeId.value = '';
+  isEditing.value = false
+  currentEmployeeId.value = ''
   formData.value = {
     fullName: '',
     employeeCode: '',
@@ -363,13 +326,13 @@ const openAddModal = () => {
     isActive: true,
     phone: '',
     hireDate: '',
-  };
-  showModal.value = true;
-};
+  }
+  showModal.value = true
+}
 
 const openEditModal = (employee: Employee) => {
-  isEditing.value = true;
-  currentEmployeeId.value = employee._id;
+  isEditing.value = true
+  currentEmployeeId.value = employee._id
   formData.value = {
     fullName: employee.fullName || '',
     employeeCode: employee.employeeCode || '',
@@ -380,13 +343,13 @@ const openEditModal = (employee: Employee) => {
     isActive: employee.isActive ?? true,
     phone: employee.phone || '',
     hireDate: normalizeDate(employee.hireDate),
-  };
-  showModal.value = true;
-};
+  }
+  showModal.value = true
+}
 
 const closeModal = () => {
-  showModal.value = false;
-};
+  showModal.value = false
+}
 
 const saveEmployee = async () => {
   const payload = {
@@ -399,58 +362,52 @@ const saveEmployee = async () => {
     isActive: formData.value.isActive,
     phone: formData.value.phone,
     hireDate: formData.value.hireDate || undefined,
-  };
+  }
 
   const url = isEditing.value
     ? `${API_BASE}/employees/${currentEmployeeId.value}`
-    : `${API_BASE}/employees`;
+    : `${API_BASE}/employees`
 
-  const method = isEditing.value ? 'PATCH' : 'POST';
+  const method = isEditing.value ? 'PATCH' : 'POST'
 
   try {
     const response = await fetch(url, {
       method,
       headers: getHeaders(),
       body: JSON.stringify(payload),
-    });
+    })
 
     if (!response.ok) {
-      const text = await response.text();
-      console.error('Save employee failed:', text);
-      alert('Failed to save employee.');
-      return;
+      console.error('Save employee failed:', await response.text())
+      return
     }
 
-    closeModal();
-    await fetchEmployees();
+    closeModal()
+    await fetchEmployees()
   } catch (error) {
-    console.error('Save employee error:', error);
-    alert('Error saving employee.');
+    console.error('Save employee error:', error)
   }
-};
+}
 
 const deactivateEmployee = async (id: string) => {
-  if (!confirm('Deactivate this employee?')) return;
+  if (!confirm('Deactivate this employee?')) return
 
   try {
     const response = await fetch(`${API_BASE}/employees/${id}/deactivate`, {
       method: 'PATCH',
       headers: getHeaders(),
-    });
+    })
 
     if (!response.ok) {
-      const text = await response.text();
-      console.error('Deactivate employee failed:', text);
-      alert('Failed to deactivate employee.');
-      return;
+      console.error('Deactivate employee failed:', await response.text())
+      return
     }
 
-    await fetchEmployees();
+    await fetchEmployees()
   } catch (error) {
-    console.error('Deactivate employee error:', error);
-    alert('Error deactivating employee.');
+    console.error('Deactivate employee error:', error)
   }
-};
+}
 
-onMounted(fetchEmployees);
+onMounted(fetchEmployees)
 </script>
