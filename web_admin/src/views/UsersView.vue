@@ -70,9 +70,18 @@
           </thead>
 
           <tbody>
-            <tr v-if="isLoading" class="state-row">
-              <td colspan="7">Loading employees...</td>
-            </tr>
+            <template v-if="isLoading">
+              <tr
+                v-for="row in skeletonRows"
+                :key="`employee-skeleton-${row}`"
+                class="skeleton-row"
+                aria-hidden="true"
+              >
+                <td colspan="7">
+                  <div class="table-skeleton-line"></div>
+                </td>
+              </tr>
+            </template>
 
             <tr v-else-if="filteredEmployees.length === 0" class="state-row">
               <td colspan="7">No employees found.</td>
@@ -141,8 +150,20 @@
             </div>
 
             <div class="form-group">
+              <label>Email</label>
+              <input v-model="formData.email" type="email" required placeholder="e.g. employee@company.com" class="erp-input" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
               <label>Employee Code</label>
               <input v-model="formData.employeeCode" type="text" required placeholder="e.g. EMP001" class="erp-input" />
+            </div>
+
+            <div class="form-group">
+              <label>Phone</label>
+              <input v-model="formData.phone" type="text" placeholder="e.g. 095490904" class="erp-input" />
             </div>
           </div>
 
@@ -184,11 +205,6 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label>Phone</label>
-              <input v-model="formData.phone" type="text" placeholder="e.g. 095490904" class="erp-input" />
-            </div>
-
-            <div class="form-group">
               <label>Hire Date</label>
               <input v-model="formData.hireDate" type="date" class="erp-input" />
             </div>
@@ -203,7 +219,7 @@
           </div>
 
           <div class="helper-box">
-            <strong>Tip:</strong> Keep employee code unique to avoid payroll and attendance mismatch.
+            <strong>Tip:</strong> Saving a new employee now also creates an employee login account automatically.
           </div>
 
           <div class="modal-footer">
@@ -213,15 +229,54 @@
         </form>
       </div>
     </div>
+
+    <div v-if="accountCredentials" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h3>Employee Account Ready</h3>
+            <p class="modal-subtitle">
+              Share these login details with the employee and ask them to change the password after first sign-in.
+            </p>
+          </div>
+
+          <button @click="closeCredentialsModal" class="close-btn" type="button">✕</button>
+        </div>
+
+        <div class="modal-form">
+          <div class="helper-box">
+            <strong>Username:</strong> {{ accountCredentials.username }}<br />
+            <strong>Temporary Password:</strong> {{ accountCredentials.temporaryPassword }}<br />
+            <strong>Email:</strong> {{ accountCredentials.email }}
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" @click="copyCredentials" class="erp-btn-secondary">
+              Copy Credentials
+            </button>
+            <button type="button" @click="closeCredentialsModal" class="erp-btn">
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+type AccountCredentials = {
+  username: string
+  temporaryPassword: string
+  email: string
+}
+
 type Employee = {
   _id: string
   fullName: string
+  email?: string
   employeeCode: string
   position?: string
   department?: string
@@ -239,6 +294,8 @@ const isLoading = ref(true)
 const showModal = ref(false)
 const isEditing = ref(false)
 const currentEmployeeId = ref('')
+const skeletonRows = Array.from({ length: 6 }, (_, index) => index)
+const accountCredentials = ref<AccountCredentials | null>(null)
 
 const searchTerm = ref('')
 const statusFilter = ref('')
@@ -246,6 +303,7 @@ const departmentFilter = ref('')
 
 const formData = ref({
   fullName: '',
+  email: '',
   employeeCode: '',
   position: '',
   department: '',
@@ -316,8 +374,10 @@ const fetchEmployees = async () => {
 const openAddModal = () => {
   isEditing.value = false
   currentEmployeeId.value = ''
+  accountCredentials.value = null
   formData.value = {
     fullName: '',
+    email: '',
     employeeCode: '',
     position: '',
     department: '',
@@ -335,6 +395,7 @@ const openEditModal = (employee: Employee) => {
   currentEmployeeId.value = employee._id
   formData.value = {
     fullName: employee.fullName || '',
+    email: employee.email || '',
     employeeCode: employee.employeeCode || '',
     position: employee.position || '',
     department: employee.department || '',
@@ -351,9 +412,30 @@ const closeModal = () => {
   showModal.value = false
 }
 
+const closeCredentialsModal = () => {
+  accountCredentials.value = null
+}
+
+const copyCredentials = async () => {
+  if (!accountCredentials.value) return
+
+  const text = [
+    `Username: ${accountCredentials.value.username}`,
+    `Temporary Password: ${accountCredentials.value.temporaryPassword}`,
+    `Email: ${accountCredentials.value.email}`,
+  ].join('\n')
+
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch (error) {
+    console.error('Copy credentials error:', error)
+  }
+}
+
 const saveEmployee = async () => {
   const payload = {
     fullName: formData.value.fullName,
+    email: formData.value.email,
     employeeCode: formData.value.employeeCode,
     position: formData.value.position,
     department: formData.value.department,
@@ -378,14 +460,22 @@ const saveEmployee = async () => {
     })
 
     if (!response.ok) {
-      console.error('Save employee failed:', await response.text())
+      const errorText = await response.text()
+      console.error('Save employee failed:', errorText)
+      alert(errorText || 'Unable to save employee')
       return
     }
 
+    const data = await response.json()
+
     closeModal()
+    if (!isEditing.value && data?.credentials) {
+      accountCredentials.value = data.credentials
+    }
     await fetchEmployees()
   } catch (error) {
     console.error('Save employee error:', error)
+    alert('Unable to save employee right now')
   }
 }
 

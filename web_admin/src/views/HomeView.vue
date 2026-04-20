@@ -326,7 +326,12 @@ const handleLogout = () => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
   overflow-y: auto;
+}
+
+.main-content :deep(.page-shell) {
+  width: min(1440px, 100%);
 }
 
 @media (max-width: 900px) {

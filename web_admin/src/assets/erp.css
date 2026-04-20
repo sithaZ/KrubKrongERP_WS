@@ -49,6 +49,7 @@ body {
   padding: 24px;
   max-width: 1440px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .page-header {
@@ -87,6 +88,12 @@ body {
 .toolbar-card,
 .table-card {
   overflow: hidden;
+}
+
+.table-card {
+  min-height: 430px;
+  display: flex;
+  flex-direction: column;
 }
 
 .toolbar-grid {
@@ -219,6 +226,8 @@ body {
   overflow-x: auto;
   overflow-y: hidden;
   border-radius: var(--radius-md);
+  flex: 1;
+  min-height: 320px;
 }
 
 .erp-table {
@@ -241,6 +250,7 @@ body {
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
   vertical-align: middle;
+  text-align: center;
 }
 
 .erp-table tbody td {
@@ -249,6 +259,7 @@ body {
   vertical-align: middle;
   color: var(--text);
   line-height: 1.45;
+  text-align: center;
 }
 
 .erp-table tbody tr:hover {
@@ -275,12 +286,39 @@ body {
   padding: 24px 16px;
 }
 
+.skeleton-row td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.table-skeleton-line {
+  width: 100%;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e2e8f0 0%, #f8fafc 50%, #e2e8f0 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.1s linear infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .user-cell {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 14px;
   min-width: 0;
   min-height: 48px;
+  margin: 0 auto;
+  text-align: left;
 }
 
 .user-avatar {
@@ -314,6 +352,7 @@ body {
 .salary-cell {
   white-space: nowrap;
   font-weight: 500;
+  text-align: center;
 }
 
 .note-cell {
@@ -395,7 +434,7 @@ body {
 
 .actions-inline {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
@@ -451,7 +490,7 @@ body {
 .employees-table th:nth-child(7),
 .employees-table td:nth-child(7) {
   width: 230px;
-  text-align: right;
+  text-align: center;
 }
 
 /* Attendance table */
@@ -504,7 +543,7 @@ body {
 .attendance-table th:nth-child(9),
 .attendance-table td:nth-child(9) {
   width: 120px;
-  text-align: right;
+  text-align: center;
 }
 
 /* Payroll table */
@@ -556,7 +595,7 @@ body {
 .payroll-table th:nth-child(11),
 .payroll-table td:nth-child(11) {
   width: 130px;
-  text-align: right;
+  text-align: center;
 }
 
 .modal-overlay {

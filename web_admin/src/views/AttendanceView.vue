@@ -61,9 +61,18 @@
           </thead>
 
           <tbody>
-            <tr v-if="isLoading" class="state-row">
-              <td colspan="9">Loading attendance...</td>
-            </tr>
+            <template v-if="isLoading">
+              <tr
+                v-for="row in skeletonRows"
+                :key="`attendance-skeleton-${row}`"
+                class="skeleton-row"
+                aria-hidden="true"
+              >
+                <td colspan="9">
+                  <div class="table-skeleton-line"></div>
+                </td>
+              </tr>
+            </template>
 
             <tr v-else-if="filteredAttendance.length === 0" class="state-row">
               <td colspan="9">No attendance records found.</td>
@@ -211,6 +220,7 @@ const attendance = ref<AttendanceRecord[]>([])
 const isLoading = ref(true)
 const showModal = ref(false)
 const currentAttendanceId = ref('')
+const skeletonRows = Array.from({ length: 6 }, (_, index) => index)
 
 const searchTerm = ref('')
 const statusFilter = ref('')

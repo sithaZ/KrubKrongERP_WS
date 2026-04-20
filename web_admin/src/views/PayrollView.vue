@@ -65,9 +65,18 @@
           </thead>
 
           <tbody>
-            <tr v-if="isLoading" class="state-row">
-              <td colspan="11">Loading payroll records...</td>
-            </tr>
+            <template v-if="isLoading">
+              <tr
+                v-for="row in skeletonRows"
+                :key="`payroll-skeleton-${row}`"
+                class="skeleton-row"
+                aria-hidden="true"
+              >
+                <td colspan="11">
+                  <div class="table-skeleton-line"></div>
+                </td>
+              </tr>
+            </template>
 
             <tr v-else-if="filteredPayrolls.length === 0" class="state-row">
               <td colspan="11">No payroll records found.</td>
@@ -202,6 +211,7 @@ const payrolls = ref<PayrollRecord[]>([])
 const employees = ref<Employee[]>([])
 const isLoading = ref(true)
 const showGenerateModal = ref(false)
+const skeletonRows = Array.from({ length: 6 }, (_, index) => index)
 
 const searchTerm = ref('')
 const statusFilter = ref('')

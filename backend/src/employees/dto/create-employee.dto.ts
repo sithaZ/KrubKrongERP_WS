@@ -1,6 +1,7 @@
 import {
   IsBoolean,
   IsDateString,
+  IsEmail,
   IsEnum,
   IsMongoId,
   IsNumber,
@@ -16,6 +17,9 @@ export class CreateEmployeeDto {
 
   @IsString()
   fullName: string;
+
+  @IsEmail()
+  email: string;
 
   @IsString()
   employeeCode: string;

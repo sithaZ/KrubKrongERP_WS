@@ -9,6 +9,9 @@ export class Employee extends Document {
   @Prop({ required: true })
   fullName: string;
 
+  @Prop({ trim: true, lowercase: true })
+  email?: string;
+
   @Prop({ required: true, unique: true, trim: true })
   employeeCode: string;
 
