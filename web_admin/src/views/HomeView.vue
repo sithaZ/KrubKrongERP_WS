@@ -23,8 +23,8 @@
             </svg>
           </div>
           <div class="user-info">
-            <span class="role">Administrator</span>
-            <span class="name">Admin User</span>
+            <span class="role">{{ displayRole }}</span>
+            <span class="name">{{ displayName }}</span>
           </div>
         </div>
 
@@ -112,6 +112,8 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
+const displayName = ref('Admin User');
+const displayRole = ref('Administrator');
 
 const currentDate = ref(
   new Intl.DateTimeFormat('en-US', {
@@ -123,14 +125,23 @@ const currentDate = ref(
 );
 
 onMounted(() => {
-  const token = localStorage.getItem('access_token');
-  if (!token) {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+
+  if (!token || role !== 'ADMIN') {
     router.push('/login');
+    return;
   }
+
+  displayName.value = localStorage.getItem('username') || 'Admin User';
 });
 
 const handleLogout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
   localStorage.removeItem('access_token');
+  localStorage.removeItem('user_role');
+  localStorage.removeItem('username');
   router.push('/login');
 };
 </script>
