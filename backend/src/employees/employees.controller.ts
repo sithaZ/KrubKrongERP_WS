@@ -5,12 +5,19 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/enums/role.enum';
 
 @Controller('employees')
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.ADMIN)
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 

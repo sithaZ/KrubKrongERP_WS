@@ -71,7 +71,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
 import { useRouter } from 'vue-router';
 
 
@@ -107,6 +106,9 @@ const router = useRouter();
 
 
 const handleLogin = async () => {
+  errorMessage.value = '';
+  isLoading.value = true;
+
   try {
     const response = await fetch('http://localhost:3000/api/auth/login', {
       method: 'POST',
@@ -116,23 +118,34 @@ const handleLogin = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      
-     
-      if (data.role === 'STAFF') {
-        alert('Access Denied: Staff members must log in using the Mobile POS App.');
-        return; 
+
+      if (data.role !== 'ADMIN') {
+        errorMessage.value = 'Access denied. web_admin is available for ADMIN users only.';
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('username');
+        return;
       }
-      
-      
+
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('role', data.role);
+
+      // Keep legacy keys temporarily so existing API calls continue to work.
       localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('user_role', data.role);
+      localStorage.setItem('username', data.username || username.value);
       router.push('/dashboard');
-      
     } else {
       const errorData = await response.json();
-      alert(errorData.message); 
+      errorMessage.value = errorData.message || 'Login failed';
     }
   } catch (error) {
     console.error('Login failed:', error);
+    errorMessage.value = 'Unable to connect to the server right now.';
+  } finally {
+    isLoading.value = false;
   }
 };
 </script>

@@ -68,4 +68,32 @@ const router = createRouter({
   ]
 })
 
+router.beforeEach((to, _from, next) => {
+  const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role')
+  const isLoginRoute = to.path === '/login'
+
+  if (!token && !isLoginRoute) {
+    next('/login')
+    return
+  }
+
+  if (token && isLoginRoute && role === 'ADMIN') {
+    next('/dashboard')
+    return
+  }
+
+  if (token && !isLoginRoute && role !== 'ADMIN') {
+    localStorage.removeItem('token')
+    localStorage.removeItem('role')
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('user_role')
+    localStorage.removeItem('username')
+    next('/login')
+    return
+  }
+
+  next()
+})
+
 export default router
