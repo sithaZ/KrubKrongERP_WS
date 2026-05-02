@@ -7,28 +7,28 @@ export class Employee extends Document {
   userId?: Types.ObjectId;
 
   @Prop({ required: true })
-  fullName: string;
+  fullName!: string;
 
   @Prop({ trim: true, lowercase: true })
   email?: string;
 
-  @Prop({ required: true, unique: true, trim: true })
-  employeeCode: string;
+  @Prop({ required: true, unique: true, trim: true, index: true })
+  employeeCode!: string;
 
   @Prop({ default: 'staff', trim: true })
-  position: string;
+  position!: string;
 
   @Prop({ default: 'general', trim: true })
-  department: string;
+  department!: string;
 
   @Prop({ required: true, enum: ['daily', 'monthly'] })
-  salaryType: 'daily' | 'monthly';
+  salaryType!: 'daily' | 'monthly';
 
   @Prop({ required: true, min: 0 })
-  baseSalary: number;
+  baseSalary!: number;
 
   @Prop({ default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @Prop({ trim: true })
   phone?: string;

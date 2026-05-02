@@ -2,7 +2,10 @@ import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/co
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+<<<<<<< HEAD
 import { RegisterDto } from './dto/register.dto';
+=======
+>>>>>>> 90061212bc30cab3665bd0cf20465d9da5a273ef
 
 @Injectable()
 export class AuthService {
@@ -11,6 +14,7 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
+<<<<<<< HEAD
   async register(registerDto: RegisterDto) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(registerDto.password, salt);
@@ -22,6 +26,11 @@ export class AuthService {
       name: registerDto.name,
       phone: registerDto.phone,
     };
+=======
+  async register(userData: any) {
+    const salt = await bcrypt.genSalt(10);
+    userData.password = await bcrypt.hash(userData.password, salt);
+>>>>>>> 90061212bc30cab3665bd0cf20465d9da5a273ef
 
     const user = await this.usersService.create(userData);
 
@@ -57,6 +66,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+<<<<<<< HEAD
     const token = await this.jwtService.signAsync({
       sub: user._id.toString(),
       email: user.email,
@@ -96,3 +106,18 @@ export class AuthService {
   }
 }
 
+=======
+    const payload = {
+      sub: user._id.toString(),
+      username: user.username,
+      role: user.role,
+    };
+
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+      role: user.role,
+      username: user.username,
+    };
+  }
+}
+>>>>>>> 90061212bc30cab3665bd0cf20465d9da5a273ef

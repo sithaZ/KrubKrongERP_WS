@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,9 +12,14 @@ import { Employee } from './employee.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UsersService } from '../users/users.service';
+import { Role } from '../common/enums/role.enum';
 
 @Injectable()
 export class EmployeesService {
+  private static readonly EMPLOYEE_CODE_PREFIX = 'EMP';
+  private static readonly EMPLOYEE_CODE_PAD_LENGTH = 3;
+  private static readonly MAX_CREATE_RETRIES = 5;
+
   constructor(
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
     private usersService: UsersService,
@@ -49,15 +55,59 @@ export class EmployeesService {
     return `ERP-${randomBytes(4).toString('hex')}`;
   }
 
+  private formatEmployeeCode(sequence: number) {
+    return `${EmployeesService.EMPLOYEE_CODE_PREFIX}${sequence
+      .toString()
+      .padStart(EmployeesService.EMPLOYEE_CODE_PAD_LENGTH, '0')}`;
+  }
+
+  private async getNextEmployeeCode() {
+    const [latestEmployee] = await this.employeeModel.aggregate<{
+      numericPart: number;
+    }>([
+      {
+        $match: {
+          employeeCode: {
+            $regex: `^${EmployeesService.EMPLOYEE_CODE_PREFIX}[0-9]+$`,
+          },
+        },
+      },
+      {
+        $addFields: {
+          numericPart: {
+            $toInt: {
+              $substrCP: [
+                '$employeeCode',
+                EmployeesService.EMPLOYEE_CODE_PREFIX.length,
+                {
+                  $subtract: [
+                    { $strLenCP: '$employeeCode' },
+                    EmployeesService.EMPLOYEE_CODE_PREFIX.length,
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
+      { $sort: { numericPart: -1 } },
+      { $limit: 1 },
+    ]);
+
+    const nextSequence = (latestEmployee?.numericPart ?? 0) + 1;
+    return this.formatEmployeeCode(nextSequence);
+  }
+
+  private isDuplicateKeyError(error: unknown) {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 11000
+    );
+  }
+
   async create(createEmployeeDto: CreateEmployeeDto) {
-    const existing = await this.employeeModel.findOne({
-      employeeCode: createEmployeeDto.employeeCode,
-    });
-
-    if (existing) {
-      throw new BadRequestException('Employee code already exists');
-    }
-
     const normalizedEmail = this.normalizeEmail(createEmployeeDto.email);
 
     const existingEmployeeEmail = await this.employeeModel.findOne({
@@ -74,44 +124,70 @@ export class EmployeesService {
       throw new BadRequestException('User email already exists');
     }
 
-    const username = await this.generateUniqueUsername(createEmployeeDto.employeeCode);
     const temporaryPassword = this.generateTemporaryPassword();
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(temporaryPassword, salt);
 
-    const user = await this.usersService.create({
-      username,
-      email: normalizedEmail,
-      password: hashedPassword,
-      role: 'employee',
-      isActive: createEmployeeDto.isActive ?? true,
-    });
+    for (
+      let attempt = 1;
+      attempt <= EmployeesService.MAX_CREATE_RETRIES;
+      attempt += 1
+    ) {
+      const employeeCode = await this.getNextEmployeeCode();
+      const username = await this.generateUniqueUsername(employeeCode);
+      let createdUser: Awaited<ReturnType<UsersService['create']>> | null = null;
 
-    const payload = {
-      ...createEmployeeDto,
-      email: normalizedEmail,
-      userId: new Types.ObjectId(user._id.toString()),
-      hireDate: createEmployeeDto.hireDate
-        ? new Date(createEmployeeDto.hireDate)
-        : undefined,
-    };
-
-    try {
-      const employee = new this.employeeModel(payload);
-      const savedEmployee = await employee.save();
-
-      return {
-        employee: await savedEmployee.populate('userId'),
-        credentials: {
+      try {
+        createdUser = await this.usersService.create({
           username,
-          temporaryPassword,
           email: normalizedEmail,
-        },
-      };
-    } catch (error) {
-      await this.usersService.remove(user._id.toString());
-      throw error;
+          password: hashedPassword,
+          role: Role.STAFF,
+          isActive: createEmployeeDto.isActive ?? true,
+        });
+
+        const payload = {
+          ...createEmployeeDto,
+          employeeCode,
+          email: normalizedEmail,
+          userId: new Types.ObjectId(createdUser._id.toString()),
+          hireDate: createEmployeeDto.hireDate
+            ? new Date(createEmployeeDto.hireDate)
+            : undefined,
+        };
+
+        const employee = new this.employeeModel(payload);
+        const savedEmployee = await employee.save();
+
+        return {
+          employee: await savedEmployee.populate('userId'),
+          credentials: {
+            username,
+            temporaryPassword,
+            email: normalizedEmail,
+          },
+        };
+      } catch (error) {
+        if (createdUser) {
+          await this.usersService.remove(createdUser._id.toString()).catch(() => {
+            return undefined;
+          });
+        }
+
+        if (
+          this.isDuplicateKeyError(error) &&
+          attempt < EmployeesService.MAX_CREATE_RETRIES
+        ) {
+          continue;
+        }
+
+        throw error;
+      }
     }
+
+    throw new ConflictException(
+      'Unable to generate a unique employee code. Please try again.',
+    );
   }
 
   async findAll() {

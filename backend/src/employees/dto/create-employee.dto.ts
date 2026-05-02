@@ -21,9 +21,6 @@ export class CreateEmployeeDto {
   @IsEmail()
   email: string;
 
-  @IsString()
-  employeeCode: string;
-
   @IsOptional()
   @IsString()
   position?: string;

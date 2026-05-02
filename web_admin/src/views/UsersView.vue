@@ -157,13 +157,13 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label>Employee Code</label>
-              <input v-model="formData.employeeCode" type="text" required placeholder="e.g. EMP001" class="erp-input" />
-            </div>
-
-            <div class="form-group">
               <label>Phone</label>
               <input v-model="formData.phone" type="text" placeholder="e.g. 095490904" class="erp-input" />
+            </div>
+
+            <div v-if="isEditing" class="form-group">
+              <label>Employee Code</label>
+              <input v-model="formData.employeeCode" type="text" class="erp-input" readonly />
             </div>
           </div>
 
@@ -219,7 +219,7 @@
           </div>
 
           <div class="helper-box">
-            <strong>Tip:</strong> Saving a new employee now also creates an employee login account automatically.
+            <strong>Tip:</strong> Saving a new employee now auto-generates the employee code and creates the employee login account automatically.
           </div>
 
           <div class="modal-footer">
@@ -315,7 +315,7 @@ const formData = ref({
 })
 
 const getHeaders = () => {
-  const token = localStorage.getItem('access_token')
+  const token = localStorage.getItem('token')
   return {
     'Content-Type': 'application/json',
     Authorization: token ? `Bearer ${token}` : '',
@@ -436,7 +436,6 @@ const saveEmployee = async () => {
   const payload = {
     fullName: formData.value.fullName,
     email: formData.value.email,
-    employeeCode: formData.value.employeeCode,
     position: formData.value.position,
     department: formData.value.department,
     salaryType: formData.value.salaryType,
@@ -453,6 +452,12 @@ const saveEmployee = async () => {
   const method = isEditing.value ? 'PATCH' : 'POST'
 
   try {
+    if (isEditing.value) {
+      Object.assign(payload, {
+        employeeCode: formData.value.employeeCode,
+      })
+    }
+
     const response = await fetch(url, {
       method,
       headers: getHeaders(),
