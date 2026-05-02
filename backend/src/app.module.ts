@@ -6,6 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { EmployeesModule } from './employees/employees.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { PayrollModule } from './payroll/payroll.module';
+import { ProductsModule } from './products/products.module';
+import { OrdersModule } from './orders/orders.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { PayrollModule } from './payroll/payroll.module';
     EmployeesModule,
     AttendanceModule,
     PayrollModule,
+    ProductsModule,
+    OrdersModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}

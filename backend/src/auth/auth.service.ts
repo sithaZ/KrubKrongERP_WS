@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt'; 
+import * as bcrypt from 'bcrypt';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -10,37 +11,88 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async register(userData: any) {
-    
+  async register(registerDto: RegisterDto) {
     const salt = await bcrypt.genSalt(10);
-    userData.password = await bcrypt.hash(userData.password, salt);
-    
+    const hashedPassword = await bcrypt.hash(registerDto.password, salt);
+
+    const userData = {
+      username: registerDto.email.split('@')[0],
+      email: registerDto.email,
+      password: hashedPassword,
+      name: registerDto.name,
+      phone: registerDto.phone,
+    };
+
     const user = await this.usersService.create(userData);
-    const userObj = user.toObject ? user.toObject() : user;
-    const { password, ...safeUser } = userObj as any;
-    return safeUser;
+
+    const token = await this.jwtService.signAsync({
+      sub: user._id.toString(),
+      email: user.email,
+      role: user.role
+    });
+
+    return {
+      token,
+      refreshToken: token,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || null,
+        phone: user.phone || null,
+        isActive: user.isActive,
+      },
+    };
   }
 
-  async login(username: string, pass: string) {
-    const user = await this.usersService.findOneByUsername(username);
+  async login(email: string, password: string) {
+    const user = await this.usersService.findByEmail(email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    
-    const isMatch = await bcrypt.compare(pass, user.password);
+
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    
-    
-    const payload = { 
-      sub: user._id.toString(), 
-      username: user.username,
-      role: user.role 
-    };
-    
+
+    const token = await this.jwtService.signAsync({
+      sub: user._id.toString(),
+      email: user.email,
+      role: user.role
+    });
+
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      token,
+      refreshToken: token,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || null,
+        phone: user.phone || null,
+        isActive: user.isActive,
+      },
+    };
+  }
+
+  async getCurrentUser(userId: string) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar || null,
+      phone: user.phone || null,
+      isActive: user.isActive,
     };
   }
 }
+
