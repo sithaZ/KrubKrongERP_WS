@@ -76,14 +76,18 @@ class UserModel {
   }
 
   UserRole _parseRole(String role) {
-    switch (role.toLowerCase()) {
-      case 'admin':
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
         return UserRole.admin;
-      case 'manager':
-        return UserRole.manager;
-      case 'cashier':
+      case 'OWNER':
+        return UserRole.owner;
+      case 'STAFF':
+        return UserRole.staff;
       default:
-        return UserRole.cashier;
+        // Handle legacy roles if any
+        if (role.toLowerCase() == 'manager') return UserRole.owner;
+        if (role.toLowerCase() == 'cashier') return UserRole.staff;
+        return UserRole.staff;
     }
   }
 }

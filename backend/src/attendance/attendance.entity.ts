@@ -15,6 +15,19 @@ export class Attendance extends Document {
   @Prop()
   checkOut?: Date;
 
+  @Prop({ type: Object })
+  checkInLocation?: { lat: number; lng: number };
+
+  @Prop({ type: Object })
+  checkOutLocation?: { lat: number; lng: number };
+
+  @Prop({
+    required: true,
+    enum: ['on_site', 'remote', 'unknown'],
+    default: 'unknown',
+  })
+  locationStatus: 'on_site' | 'remote' | 'unknown';
+
   @Prop({
     required: true,
     enum: ['present', 'absent', 'late', 'half_day'],

@@ -94,6 +94,9 @@ class LoggingInterceptor extends Interceptor {
       'ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}',
     );
     print('Error: ${err.message}');
+    if (err.response?.data != null) {
+      print('Error Data: ${err.response?.data}');
+    }
     return super.onError(err, handler);
   }
 }

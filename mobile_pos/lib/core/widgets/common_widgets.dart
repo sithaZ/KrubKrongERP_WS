@@ -79,9 +79,9 @@ class LoadingOverlay extends StatelessWidget {
 }
 
 /// Error widget with retry action
-class ErrorWidget extends StatelessWidget {
+class AppErrorWidget extends StatelessWidget {
 
-  const ErrorWidget({
+  const AppErrorWidget({
     super.key,
     required this.message,
     this.onRetry,
@@ -193,7 +193,6 @@ class EmptyStateWidget extends StatelessWidget {
 
 /// App logo widget
 class AppLogo extends StatelessWidget {
-
   const AppLogo({
     super.key,
     this.size = 120,
@@ -216,6 +215,88 @@ class AppLogo extends StatelessWidget {
         size: size * 0.5,
         color: Colors.white,
       ),
+    );
+  }
+}
+
+/// Utility for showing modern alerts
+class ModernAlert {
+  static void show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required IconData icon,
+    Color? iconColor,
+    VoidCallback? onConfirm,
+    String? confirmLabel,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.all(0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+        title: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: (iconColor ?? Theme.of(context).colorScheme.primary).withOpacity(0.1),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Icon(
+            icon,
+            size: 48,
+            color: iconColor ?? Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  onConfirm?.call();
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(confirmLabel ?? 'Got it'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void showError(BuildContext context, String message) {
+    show(
+      context,
+      title: 'Login Failed',
+      message: message,
+      icon: Icons.error_outline,
+      iconColor: Colors.redAccent,
+      confirmLabel: 'Try Again',
     );
   }
 }

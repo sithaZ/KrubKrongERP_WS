@@ -38,9 +38,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  void _navigateToRegister() {
-    context.push('/register');
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,26 +45,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Listen for auth errors and show snackbar
+    // Listen for auth errors and show modern alert
     ref.listen(authProvider, (previous, next) {
       if (next.status == AuthStatus.error && next.failure != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.failure!.message),
-            backgroundColor: colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            action: SnackBarAction(
-              label: 'Dismiss',
-              textColor: Colors.white,
-              onPressed: () {
-                ref.read(authProvider.notifier).clearError();
-              },
-            ),
-          ),
-        );
+        ModernAlert.showError(context, next.failure!.message);
+        ref.read(authProvider.notifier).clearError();
       }
     });
 
@@ -219,48 +201,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Divider
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: colorScheme.outline)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'OR',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: colorScheme.outline)),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Register link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Don't have an account?",
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: _navigateToRegister,
-                        child: Text(
-                          'Sign Up',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

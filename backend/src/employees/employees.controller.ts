@@ -17,7 +17,7 @@ import { Role } from '../common/enums/role.enum';
 
 @Controller('employees')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@Roles(Role.ADMIN, Role.OWNER)
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 

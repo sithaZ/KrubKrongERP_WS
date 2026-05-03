@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/errors/failures.dart';
+import '../../../../core/errors/failures.dart' as app_errors;
 import '../../../../core/providers/core_providers.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -70,13 +70,13 @@ class AuthState {
   });
   final AuthStatus status;
   final User? user;
-  final Failure? failure;
+  final app_errors.Failure? failure;
   final bool isLoading;
 
   AuthState copyWith({
     AuthStatus? status,
     User? user,
-    Failure? failure,
+    app_errors.Failure? failure,
     bool? isLoading,
   }) {
     return AuthState(
@@ -113,25 +113,53 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Check if user is authenticated
   Future<void> checkAuthStatus() async {
-    state = state.copyWith(status: AuthStatus.loading, isLoading: true);
+    state = state.copyWith(
+      status: state.status == AuthStatus.initial ? AuthStatus.loading : state.status,
+      isLoading: true,
+    );
 
     final result = await _checkAuthStatusUseCase(const NoParams());
 
     result.fold(
-      (failure) => state = state.copyWith(
-        status: AuthStatus.unauthenticated,
-        isLoading: false,
-        failure: failure,
-      ),
+      (failure) {
+        // If we are already authenticated, don't logout on check failure (might be network)
+        if (state.status == AuthStatus.authenticated) {
+          state = state.copyWith(isLoading: false);
+          return;
+        }
+        
+        state = state.copyWith(
+          status: AuthStatus.unauthenticated,
+          isLoading: false,
+          failure: failure,
+        );
+      },
       (isAuthenticated) async {
         if (isAuthenticated) {
+          // If we are already authenticated and have a user, we can skip fetching user again or do it silently
+          if (state.status == AuthStatus.authenticated && state.user != null) {
+            state = state.copyWith(isLoading: false);
+            // Optionally refresh user data silently
+            _getCurrentUserUseCase().then((userResult) {
+               userResult.fold((_) {}, (user) => state = state.copyWith(user: user));
+            });
+            return;
+          }
+
           // Get current user data
           final userResult = await _getCurrentUserUseCase();
           userResult.fold(
-            (failure) => state = state.copyWith(
-              status: AuthStatus.unauthenticated,
-              isLoading: false,
-            ),
+            (failure) {
+              // If already authenticated, stay that way on failure
+              if (state.status == AuthStatus.authenticated) {
+                state = state.copyWith(isLoading: false);
+              } else {
+                state = state.copyWith(
+                  status: AuthStatus.unauthenticated,
+                  isLoading: false,
+                );
+              }
+            },
             (user) => state = state.copyWith(
               status: AuthStatus.authenticated,
               user: user,

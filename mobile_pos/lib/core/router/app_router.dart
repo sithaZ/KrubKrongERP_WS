@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/pages/login_screen.dart';
-import '../../features/auth/presentation/pages/register_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/dashboard/presentation/pages/dashboard_screen.dart';
 import '../../features/order/presentation/pages/order_screen.dart';
 import '../../features/pos/presentation/pages/pos_screen.dart';
 import '../../features/product/presentation/pages/product_screen.dart';
 import '../../features/staff/presentation/pages/staff_screen.dart';
+import '../../features/staff/presentation/pages/add_staff_screen.dart';
+import '../../features/profile/presentation/pages/profile_screen.dart';
+import '../../features/attendance/presentation/pages/attendance_screen.dart';
 import '../../presentation/widgets/app_navigation_shell.dart';
 
 /// Route paths
@@ -16,12 +18,13 @@ class AppRoutes {
   AppRoutes._();
 
   static const String login = '/login';
-  static const String register = '/register';
   static const String dashboard = '/';
   static const String pos = '/pos';
   static const String products = '/products';
   static const String staff = '/staff';
+  static const String addStaff = '/staff/add';
   static const String orders = '/orders';
+  static const String attendance = '/attendance';
   static const String profile = '/profile';
 }
 
@@ -36,19 +39,17 @@ final _shellRoutes = [
 
 /// Router provider
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-
   return GoRouter(
     initialLocation: AppRoutes.dashboard,
     refreshListenable: _AuthRefreshListenable(ref),
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final isAuthenticated = authState.isAuthenticated;
       final isLoading = authState.isLoading;
-      final isAuthRoute = state.matchedLocation == AppRoutes.login ||
-          state.matchedLocation == AppRoutes.register;
+      final isAuthRoute = state.matchedLocation == AppRoutes.login;
 
-      // Don't redirect while checking auth status
-      if (isLoading) return null;
+      // Don't redirect while checking auth status (initial loading)
+      if (isLoading && authState.status == AuthStatus.initial) return null;
 
       // Redirect unauthenticated users to login
       if (!isAuthenticated && !isAuthRoute) {
@@ -67,10 +68,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.register,
-        builder: (context, state) => const RegisterScreen(),
       ),
       // Shell route with bottom navigation
       StatefulShellRoute.indexedStack(
@@ -120,6 +117,30 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.staff,
                 builder: (context, state) => const StaffScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'add',
+                    builder: (context, state) => const AddStaffScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Attendance branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.attendance,
+                builder: (context, state) => const AttendanceScreen(),
+              ),
+            ],
+          ),
+          // Profile branch
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.profile,
+                builder: (context, state) => const ProfileScreen(),
               ),
             ],
           ),

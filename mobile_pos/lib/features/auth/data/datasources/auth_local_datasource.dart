@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:erp_mobile/core/constants/app_constants.dart';
 import 'package:erp_mobile/core/storage/storage_service.dart';
 import '../models/user_model.dart';
 
@@ -15,9 +16,9 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   AuthLocalDataSourceImpl(this._secureStorage);
   final SecureStorageService _secureStorage;
 
-  static const _accessTokenKey = 'access_token';
-  static const _refreshTokenKey = 'refresh_token';
-  static const _userKey = 'cached_user';
+  static const _accessTokenKey = AppConstants.authTokenKey;
+  static const _refreshTokenKey = AppConstants.refreshTokenKey;
+  static const _userKey = AppConstants.userDataKey;
 
   @override
   Future<void> cacheTokens(AuthTokensModel tokens) async {

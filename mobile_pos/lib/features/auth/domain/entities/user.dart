@@ -28,8 +28,11 @@ class User extends Equatable {
   /// Check if user has admin privileges
   bool get isAdmin => role == UserRole.admin;
 
-  /// Check if user is a cashier
-  bool get isCashier => role == UserRole.cashier;
+  /// Check if user is an owner
+  bool get isOwner => role == UserRole.owner;
+
+  /// Check if user is a staff member
+  bool get isStaff => role == UserRole.staff;
 
   /// Get display name (name or email prefix)
   String get displayName => name.isNotEmpty ? name : email.split('@').first;
@@ -84,8 +87,8 @@ class User extends Equatable {
 /// User roles enum
 enum UserRole {
   admin,
-  cashier,
-  manager,
+  owner,
+  staff,
 }
 
 /// Auth tokens entity

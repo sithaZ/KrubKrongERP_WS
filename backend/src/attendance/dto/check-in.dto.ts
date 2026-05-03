@@ -7,4 +7,14 @@ export class CheckInDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @IsOptional()
+  lat?: number;
+
+  @IsOptional()
+  lng?: number;
+
+  @IsOptional()
+  @IsString()
+  qrToken?: string;
 }

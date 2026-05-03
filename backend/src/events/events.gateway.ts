@@ -13,7 +13,15 @@ export class EventsGateway {
     this.server.emit('roleUpdated', {
       userId: userId,
       role: newRole,
-      message: 'Your permissions have been updated.'
+      message: 'Your permissions have been updated.',
+    });
+  }
+
+  notifyStaffChange(action: 'created' | 'updated' | 'deleted', employeeId?: string) {
+    this.server.emit('staffChanged', {
+      action,
+      employeeId,
+      timestamp: new Date().toISOString(),
     });
   }
 }
