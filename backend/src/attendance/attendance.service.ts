@@ -108,10 +108,10 @@ export class AttendanceService {
   }
 
   async findAll() {
-    return this.attendanceModel
-      .find()
-      .sort({ workDate: -1, createdAt: -1 })
-      .populate('employeeId');
+  return this.attendanceModel
+    .find()
+    .sort({ workDate: -1 })
+    .populate('employeeId', 'fullName employeeCode')
   }
 
   async findByEmployee(employeeId: string) {

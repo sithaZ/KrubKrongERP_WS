@@ -13,6 +13,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UsersService } from '../users/users.service';
 import { Role } from '../common/enums/role.enum';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class EmployeesService {
@@ -23,6 +24,7 @@ export class EmployeesService {
   constructor(
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
     private usersService: UsersService,
+    private mailService: MailService,
   ) {}
 
   private normalizeEmail(email: string) {
@@ -30,14 +32,19 @@ export class EmployeesService {
   }
 
   private normalizeUsername(seed: string) {
-    return seed.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    return seed
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
   }
 
   private async generateUniqueUsername(employeeCode: string) {
     const base = this.normalizeUsername(employeeCode);
 
     if (!base) {
-      throw new BadRequestException('Employee code must contain letters or numbers');
+      throw new BadRequestException(
+        'Employee code must contain letters or numbers',
+      );
     }
 
     let candidate = base;
@@ -118,7 +125,8 @@ export class EmployeesService {
       throw new BadRequestException('Employee email already exists');
     }
 
-    const existingUserEmail = await this.usersService.findByEmail(normalizedEmail);
+    const existingUserEmail =
+      await this.usersService.findByEmail(normalizedEmail);
 
     if (existingUserEmail) {
       throw new BadRequestException('User email already exists');
@@ -135,7 +143,8 @@ export class EmployeesService {
     ) {
       const employeeCode = await this.getNextEmployeeCode();
       const username = await this.generateUniqueUsername(employeeCode);
-      let createdUser: Awaited<ReturnType<UsersService['create']>> | null = null;
+      let createdUser: Awaited<ReturnType<UsersService['create']>> | null =
+        null;
 
       try {
         createdUser = await this.usersService.create({
@@ -159,6 +168,13 @@ export class EmployeesService {
         const employee = new this.employeeModel(payload);
         const savedEmployee = await employee.save();
 
+        await this.mailService.sendEmployeeCredentials({
+          to: normalizedEmail,
+          fullName: createEmployeeDto.fullName,
+          username,
+          temporaryPassword,
+        });
+
         return {
           employee: await savedEmployee.populate('userId'),
           credentials: {
@@ -169,9 +185,11 @@ export class EmployeesService {
         };
       } catch (error) {
         if (createdUser) {
-          await this.usersService.remove(createdUser._id.toString()).catch(() => {
-            return undefined;
-          });
+          await this.usersService
+            .remove(createdUser._id.toString())
+            .catch(() => {
+              return undefined;
+            });
         }
 
         if (
@@ -257,9 +275,14 @@ export class EmployeesService {
       const userUpdatePayload: Record<string, unknown> = {};
 
       if (updateEmployeeDto.email) {
-        const existingUserEmail = await this.usersService.findByEmail(updateEmployeeDto.email);
+        const existingUserEmail = await this.usersService.findByEmail(
+          updateEmployeeDto.email,
+        );
 
-        if (existingUserEmail && existingUserEmail._id.toString() !== currentEmployee.userId.toString()) {
+        if (
+          existingUserEmail &&
+          existingUserEmail._id.toString() !== currentEmployee.userId.toString()
+        ) {
           throw new BadRequestException('User email already exists');
         }
 
@@ -271,7 +294,10 @@ export class EmployeesService {
       }
 
       if (Object.keys(userUpdatePayload).length > 0) {
-        await this.usersService.update(currentEmployee.userId.toString(), userUpdatePayload);
+        await this.usersService.update(
+          currentEmployee.userId.toString(),
+          userUpdatePayload,
+        );
       }
     }
 
