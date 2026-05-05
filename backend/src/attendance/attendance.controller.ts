@@ -5,44 +5,47 @@ import {
   Param,
   Patch,
   Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { CheckInDto } from './dto/check-in.dto';
 import { CheckOutDto } from './dto/check-out.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
-import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 
 @Controller('attendance')
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE, Role.OWNER, Role.STAFF)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('check-in')
-  checkIn(@Body() dto: CheckInDto) {
-    return this.attendanceService.checkIn(dto);
+  checkIn(@Body() dto: CheckInDto, @Request() req: any) {
+    return this.attendanceService.checkIn(dto, req.user);
   }
 
   @Post('check-out')
-  checkOut(@Body() dto: CheckOutDto) {
-    return this.attendanceService.checkOut(dto);
+  checkOut(@Body() dto: CheckOutDto, @Request() req: any) {
+    return this.attendanceService.checkOut(dto, req.user);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateAttendanceDto) {
-    return this.attendanceService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateAttendanceDto, @Request() req: any) {
+    return this.attendanceService.update(id, dto, req.user);
   }
 
   @Get()
-  findAll() {
-    return this.attendanceService.findAll();
+  findAll(@Request() req: any) {
+    return this.attendanceService.findAll(req.user);
   }
 
   @Get('employee/:employeeId')
-  findByEmployee(@Param('employeeId') employeeId: string) {
-    return this.attendanceService.findByEmployee(employeeId);
+  findByEmployee(@Param('employeeId') employeeId: string, @Request() req: any) {
+    return this.attendanceService.findByEmployee(employeeId, req.user);
   }
 
   @Get('shop-settings')
@@ -51,8 +54,7 @@ export class AttendanceController {
   }
 
   @Post('shop-settings')
-  @Roles(Role.ADMIN, Role.OWNER)
-  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   updateShopSettings(@Body() dto: any) {
     return this.attendanceService.updateShopSettings(dto);
   }

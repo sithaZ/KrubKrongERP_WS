@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,6 +12,14 @@ import { CheckOutDto } from './dto/check-out.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import { Employee } from '../employees/employee.entity';
 import { ShopSettings } from './shop-settings.entity';
+import { Role } from '../common/enums/role.enum';
+import { normalizeRole } from '../common/utils/role.utils';
+
+type RequestUser = {
+  userId: string;
+  role?: string;
+  companyId?: string | null;
+};
 
 @Injectable()
 export class AttendanceService {
@@ -22,6 +31,70 @@ export class AttendanceService {
     @InjectModel(ShopSettings.name)
     private shopSettingsModel: Model<ShopSettings>,
   ) {}
+
+  private getNormalizedRole(user: RequestUser) {
+    return normalizeRole(user.role);
+  }
+
+  private buildAttendanceFilter(currentUser: RequestUser) {
+    const normalizedRole = this.getNormalizedRole(currentUser);
+
+    if (normalizedRole === Role.ADMIN) {
+      return {};
+    }
+
+    if (normalizedRole === Role.MANAGER) {
+      if (!currentUser.companyId) {
+        throw new ForbiddenException('Manager account is missing company access');
+      }
+
+      return {
+        companyId: new Types.ObjectId(currentUser.companyId),
+      };
+    }
+
+    return {
+      employeeId: { $in: [] as Types.ObjectId[] },
+    };
+  }
+
+  private async findAccessibleEmployee(employeeId: string, currentUser: RequestUser) {
+    const normalizedRole = this.getNormalizedRole(currentUser);
+    let employee = await this.employeeModel.findById(employeeId);
+
+    if (!employee) {
+      employee = await this.employeeModel.findOne({
+        userId: new Types.ObjectId(employeeId),
+      });
+    }
+
+    if (!employee || !employee.isActive) {
+      throw new NotFoundException(
+        'Active employee record not found. Please ensure you are registered as an employee.',
+      );
+    }
+
+    if (normalizedRole === Role.ADMIN) {
+      return employee;
+    }
+
+    if (normalizedRole === Role.MANAGER) {
+      if (
+        !currentUser.companyId ||
+        employee.companyId?.toString() !== currentUser.companyId
+      ) {
+        throw new ForbiddenException('You cannot access another company\'s attendance data');
+      }
+
+      return employee;
+    }
+
+    if (employee.userId?.toString() !== currentUser.userId) {
+      throw new ForbiddenException('You can only access your own attendance data');
+    }
+
+    return employee;
+  }
 
   private getTodayString(date = new Date()) {
     return date.toISOString().split('T')[0];
@@ -60,16 +133,8 @@ export class AttendanceService {
     return R * c; // Distance in meters
   }
 
-  async checkIn(dto: CheckInDto) {
-    // Find employee by ID or by associated userId
-    let employee = await this.employeeModel.findById(dto.employeeId);
-    if (!employee) {
-      employee = await this.employeeModel.findOne({ userId: new Types.ObjectId(dto.employeeId) });
-    }
-
-    if (!employee || !employee.isActive) {
-      throw new NotFoundException('Active employee record not found. Please ensure you are registered as an employee.');
-    }
+  async checkIn(dto: CheckInDto, currentUser: RequestUser) {
+    const employee = await this.findAccessibleEmployee(dto.employeeId, currentUser);
 
     const settings = await this.getShopSettings();
     let locationStatus: 'on_site' | 'remote' | 'unknown' = 'unknown';
@@ -102,6 +167,7 @@ export class AttendanceService {
 
     const attendance = new this.attendanceModel({
       employeeId: employee._id,
+      companyId: employee.companyId,
       workDate,
       checkIn: now,
       checkInLocation: dto.lat && dto.lng ? { lat: dto.lat, lng: dto.lng } : undefined,
@@ -113,15 +179,8 @@ export class AttendanceService {
     return attendance.save();
   }
 
-  async checkOut(dto: CheckOutDto) {
-    let employee = await this.employeeModel.findById(dto.employeeId);
-    if (!employee) {
-      employee = await this.employeeModel.findOne({ userId: new Types.ObjectId(dto.employeeId) });
-    }
-
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
+  async checkOut(dto: CheckOutDto, currentUser: RequestUser) {
+    const employee = await this.findAccessibleEmployee(dto.employeeId, currentUser);
 
     const settings = await this.getShopSettings();
     
@@ -163,26 +222,35 @@ export class AttendanceService {
     return attendance.save();
   }
 
-  async findAll() {
+  async findAll(currentUser: RequestUser) {
     return this.attendanceModel
-      .find()
+      .find(this.buildAttendanceFilter(currentUser))
       .sort({ workDate: -1, createdAt: -1 })
       .populate('employeeId');
   }
 
-  async findByEmployee(employeeId: string) {
+  async findByEmployee(employeeId: string, currentUser: RequestUser) {
+    const employee = await this.findAccessibleEmployee(employeeId, currentUser);
+
     return this.attendanceModel
-      .find({ employeeId: new Types.ObjectId(employeeId) })
+      .find({ employeeId: employee._id })
       .sort({ workDate: -1, createdAt: -1 })
       .populate('employeeId');
   }
 
-  async update(id: string, dto: UpdateAttendanceDto) {
+  async update(id: string, dto: UpdateAttendanceDto, currentUser: RequestUser) {
     const attendance = await this.attendanceModel.findById(id);
 
     if (!attendance) {
       throw new NotFoundException('Attendance not found');
     }
+
+    const employee = await this.employeeModel.findById(attendance.employeeId);
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    await this.findAccessibleEmployee(employee._id.toString(), currentUser);
 
     if (dto.checkIn) {
       attendance.checkIn = new Date(dto.checkIn);

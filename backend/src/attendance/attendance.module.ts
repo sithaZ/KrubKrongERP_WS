@@ -1,14 +1,18 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule } from '@nestjs/config';
+
 import { AttendanceService } from './attendance.service';
 import { AttendanceController } from './attendance.controller';
 import { Attendance, AttendanceSchema } from './attendance.entity';
-import { Employee, EmployeeSchema } from '../employees/employee.entity';
 import { ShopSettings, ShopSettingsSchema } from './shop-settings.entity';
+
+import { Employee, EmployeeSchema } from '../employees/employee.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
+    ConfigModule,
     AuthModule,
     MongooseModule.forFeature([
       { name: Attendance.name, schema: AttendanceSchema },

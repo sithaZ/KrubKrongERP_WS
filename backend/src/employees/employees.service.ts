@@ -1,8 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -14,6 +14,13 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UsersService } from '../users/users.service';
 import { Role } from '../common/enums/role.enum';
+import { normalizeRole } from '../common/utils/role.utils';
+
+type RequestUser = {
+  userId: string;
+  role?: string;
+  companyId?: string | null;
+};
 
 @Injectable()
 export class EmployeesService {
@@ -25,6 +32,73 @@ export class EmployeesService {
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
     private usersService: UsersService,
   ) {}
+
+  private getNormalizedRole(user: RequestUser) {
+    return normalizeRole(user.role);
+  }
+
+  private toObjectId(value?: string | null) {
+    return value ? new Types.ObjectId(value) : undefined;
+  }
+
+  private resolveCompanyId(companyId: string | undefined, currentUser: RequestUser) {
+    const normalizedRole = this.getNormalizedRole(currentUser);
+
+    if (normalizedRole === Role.MANAGER) {
+      if (!currentUser.companyId) {
+        throw new ForbiddenException('Manager account is missing company access');
+      }
+
+      return new Types.ObjectId(currentUser.companyId);
+    }
+
+    return this.toObjectId(companyId);
+  }
+
+  private buildAccessFilter(currentUser: RequestUser) {
+    const normalizedRole = this.getNormalizedRole(currentUser);
+
+    if (normalizedRole === Role.ADMIN) {
+      return {};
+    }
+
+    if (normalizedRole === Role.MANAGER) {
+      if (!currentUser.companyId) {
+        throw new ForbiddenException('Manager account is missing company access');
+      }
+
+      return {
+        companyId: new Types.ObjectId(currentUser.companyId),
+      };
+    }
+
+    return {
+      userId: new Types.ObjectId(currentUser.userId),
+    };
+  }
+
+  private assertEmployeeAccess(employee: Employee, currentUser: RequestUser) {
+    const normalizedRole = this.getNormalizedRole(currentUser);
+
+    if (normalizedRole === Role.ADMIN) {
+      return;
+    }
+
+    if (normalizedRole === Role.MANAGER) {
+      if (
+        !currentUser.companyId ||
+        employee.companyId?.toString() !== currentUser.companyId
+      ) {
+        throw new ForbiddenException('You cannot access another company\'s employee data');
+      }
+
+      return;
+    }
+
+    if (employee.userId?.toString() !== currentUser.userId) {
+      throw new ForbiddenException('You can only access your own employee record');
+    }
+  }
 
   private normalizeEmail(email: string) {
     return email.trim().toLowerCase();
@@ -113,8 +187,12 @@ export class EmployeesService {
     );
   }
 
-  async create(createEmployeeDto: CreateEmployeeDto) {
+  async create(createEmployeeDto: CreateEmployeeDto, currentUser: RequestUser) {
     const normalizedEmail = this.normalizeEmail(createEmployeeDto.email);
+    const companyId = this.resolveCompanyId(
+      createEmployeeDto.companyId,
+      currentUser,
+    );
 
     const existingEmployeeEmail = await this.employeeModel.findOne({
       email: normalizedEmail,
@@ -153,7 +231,8 @@ export class EmployeesService {
           name: staffName,
           email: normalizedEmail,
           password: hashedPassword,
-          role: Role.STAFF,
+          role: Role.EMPLOYEE,
+          companyId,
           isActive: createEmployeeDto.isActive ?? true,
           phone: createEmployeeDto.phone,
         });
@@ -162,6 +241,7 @@ export class EmployeesService {
           ...createEmployeeDto,
           employeeCode,
           email: normalizedEmail,
+          companyId,
           userId: createdUser._id,
           hireDate: createEmployeeDto.hireDate
             ? new Date(createEmployeeDto.hireDate)
@@ -211,28 +291,33 @@ export class EmployeesService {
     );
   }
 
-  async findAll() {
-    return this.employeeModel.find().sort({ createdAt: -1 }).populate('userId');
-  }
-
-  async findActive() {
+  async findAll(currentUser: RequestUser) {
     return this.employeeModel
-      .find({ isActive: true })
+      .find(this.buildAccessFilter(currentUser))
       .sort({ createdAt: -1 })
       .populate('userId');
   }
 
-  async findOne(id: string) {
+  async findActive(currentUser: RequestUser) {
+    return this.employeeModel
+      .find({ ...this.buildAccessFilter(currentUser), isActive: true })
+      .sort({ createdAt: -1 })
+      .populate('userId');
+  }
+
+  async findOne(id: string, currentUser: RequestUser) {
     const employee = await this.employeeModel.findById(id).populate('userId');
 
     if (!employee) {
       throw new NotFoundException('Employee not found');
     }
 
+    this.assertEmployeeAccess(employee, currentUser);
+
     return employee;
   }
 
-  async update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
+  async update(id: string, updateEmployeeDto: UpdateEmployeeDto, currentUser: RequestUser) {
     if (updateEmployeeDto.employeeCode) {
       const existing = await this.employeeModel.findOne({
         employeeCode: updateEmployeeDto.employeeCode,
@@ -264,10 +349,17 @@ export class EmployeesService {
       throw new NotFoundException('Employee not found');
     }
 
+    this.assertEmployeeAccess(currentEmployee, currentUser);
+
     const updatePayload: any = { ...updateEmployeeDto };
+    const companyId = this.resolveCompanyId(updateEmployeeDto.companyId, currentUser);
 
     if (updateEmployeeDto.userId) {
       updatePayload.userId = new Types.ObjectId(updateEmployeeDto.userId);
+    }
+
+    if (companyId) {
+      updatePayload.companyId = companyId;
     }
 
     if (updateEmployeeDto.hireDate) {
@@ -296,6 +388,10 @@ export class EmployeesService {
         userUpdatePayload.isActive = updateEmployeeDto.isActive;
       }
 
+      if (companyId) {
+        userUpdatePayload.companyId = companyId;
+      }
+
       if (Object.keys(userUpdatePayload).length > 0) {
         await this.usersService.update(
           currentEmployee.userId.toString(),
@@ -315,12 +411,14 @@ export class EmployeesService {
     return employee;
   }
 
-  async deactivate(id: string) {
+  async deactivate(id: string, currentUser: RequestUser) {
     const currentEmployee = await this.employeeModel.findById(id);
 
     if (!currentEmployee) {
       throw new NotFoundException('Employee not found');
     }
+
+    this.assertEmployeeAccess(currentEmployee, currentUser);
 
     if (currentEmployee.userId) {
       await this.usersService.update(currentEmployee.userId.toString(), {

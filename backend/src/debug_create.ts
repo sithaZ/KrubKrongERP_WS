@@ -21,7 +21,11 @@ async function bootstrap() {
 
   try {
     console.log('Testing employee creation...');
-    const result = await service.create(dto);
+    const result = await service.create(dto, {
+      userId: 'debug-admin-user',
+      role: 'ADMIN',
+      companyId: null,
+    });
     console.log('Success!', result);
   } catch (error) {
     console.error('DIAGNOSTIC ERROR CAUGHT:');

@@ -6,6 +6,9 @@ export class Payroll extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Employee', required: true })
   employeeId: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, required: false, index: true })
+  companyId?: Types.ObjectId;
+
   @Prop({ required: true })
   month: string;
 

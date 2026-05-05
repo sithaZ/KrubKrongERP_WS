@@ -22,6 +22,6 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @Get('me')
   getCurrentUser(@Request() req: any) {
-    return this.authService.getCurrentUser(req.user.sub);
+    return this.authService.getCurrentUser(req.user.userId);
   }
 }

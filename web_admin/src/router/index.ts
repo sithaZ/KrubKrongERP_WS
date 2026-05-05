@@ -72,18 +72,19 @@ router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
   const isLoginRoute = to.path === '/login'
+  const isAdmin = role === 'ADMIN'
 
   if (!token && !isLoginRoute) {
     next('/login')
     return
   }
 
-  if (token && isLoginRoute && role === 'ADMIN') {
+  if (token && isLoginRoute && isAdmin) {
     next('/dashboard')
     return
   }
 
-  if (token && !isLoginRoute && role !== 'ADMIN') {
+  if (token && !isLoginRoute && !isAdmin) {
     localStorage.removeItem('token')
     localStorage.removeItem('role')
     localStorage.removeItem('access_token')

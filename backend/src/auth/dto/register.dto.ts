@@ -1,6 +1,7 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsMongoId,
   IsString,
   IsOptional,
   MinLength,
@@ -27,4 +28,8 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   role?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  companyId?: string;
 }

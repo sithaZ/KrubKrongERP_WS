@@ -5,44 +5,48 @@ import {
   Param,
   Patch,
   Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { PayrollService } from './payroll.service';
 import { GeneratePayrollDto } from './dto/generate-payroll.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/enums/role.enum';
 
 @Controller('payroll')
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE, Role.OWNER, Role.STAFF)
 export class PayrollController {
   constructor(private readonly payrollService: PayrollService) {}
 
-  // public for testing
   @Post('generate')
-  generate(@Body() dto: GeneratePayrollDto) {
-    return this.payrollService.generate(dto);
+  generate(@Body() dto: GeneratePayrollDto, @Request() req: any) {
+    return this.payrollService.generate(dto, req.user);
   }
 
-  // public for testing
   @Get()
-  findAll() {
-    return this.payrollService.findAll();
+  findAll(@Request() req: any) {
+    return this.payrollService.findAll(req.user);
   }
 
-  // public for testing
   @Get('employee/:employeeId')
-  findByEmployee(@Param('employeeId') employeeId: string) {
-    return this.payrollService.findByEmployee(employeeId);
+  findByEmployee(@Param('employeeId') employeeId: string, @Request() req: any) {
+    return this.payrollService.findByEmployee(employeeId, req.user);
   }
 
-  // public for testing
   @Get('employee/:employeeId/:month')
   findOneByEmployeeAndMonth(
     @Param('employeeId') employeeId: string,
     @Param('month') month: string,
+    @Request() req: any,
   ) {
-    return this.payrollService.findOneByEmployeeAndMonth(employeeId, month);
+    return this.payrollService.findOneByEmployeeAndMonth(employeeId, month, req.user);
   }
 
-  // public for testing
   @Patch(':id/finalize')
-  finalize(@Param('id') id: string) {
-    return this.payrollService.finalize(id);
+  finalize(@Param('id') id: string, @Request() req: any) {
+    return this.payrollService.finalize(id, req.user);
   }
 }

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import { normalizeRole } from '../utils/role.utils';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -27,10 +28,14 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    const normalizedUserRole = String(user.role).trim().toLowerCase();
+    const normalizedUserRole = normalizeRole(user.role);
+
+    if (!normalizedUserRole) {
+      return false;
+    }
 
     return requiredRoles.some(
-      (role) => String(role).trim().toLowerCase() === normalizedUserRole,
+      (role) => normalizeRole(role) === normalizedUserRole,
     );
   }
 }

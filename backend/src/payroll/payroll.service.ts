@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,6 +10,14 @@ import { Payroll } from './payroll.entity';
 import { Attendance } from '../attendance/attendance.entity';
 import { Employee } from '../employees/employee.entity';
 import { GeneratePayrollDto } from './dto/generate-payroll.dto';
+import { Role } from '../common/enums/role.enum';
+import { normalizeRole } from '../common/utils/role.utils';
+
+type RequestUser = {
+  userId: string;
+  role?: string;
+  companyId?: string | null;
+};
 
 @Injectable()
 export class PayrollService {
@@ -17,6 +26,79 @@ export class PayrollService {
     @InjectModel(Attendance.name) private attendanceModel: Model<Attendance>,
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
   ) {}
+
+  private getNormalizedRole(user: RequestUser) {
+    return normalizeRole(user.role);
+  }
+
+  private buildPayrollFilter(currentUser: RequestUser) {
+    const normalizedRole = this.getNormalizedRole(currentUser);
+
+    if (normalizedRole === Role.ADMIN) {
+      return {};
+    }
+
+    if (normalizedRole === Role.MANAGER) {
+      if (!currentUser.companyId) {
+        throw new ForbiddenException('Manager account is missing company access');
+      }
+
+      return {
+        companyId: new Types.ObjectId(currentUser.companyId),
+      };
+    }
+
+    return {
+      employeeId: { $in: [] as Types.ObjectId[] },
+    };
+  }
+
+  private async findAccessibleEmployee(employeeId: string, currentUser: RequestUser) {
+    const employee = await this.employeeModel.findById(employeeId);
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const normalizedRole = this.getNormalizedRole(currentUser);
+
+    if (normalizedRole === Role.ADMIN) {
+      return employee;
+    }
+
+    if (normalizedRole === Role.MANAGER) {
+      if (
+        !currentUser.companyId ||
+        employee.companyId?.toString() !== currentUser.companyId
+      ) {
+        throw new ForbiddenException('You cannot access another company\'s payroll data');
+      }
+
+      return employee;
+    }
+
+    if (employee.userId?.toString() !== currentUser.userId) {
+      throw new ForbiddenException('You can only access your own payroll data');
+    }
+
+    return employee;
+  }
+
+  private async findAccessiblePayroll(id: string, currentUser: RequestUser) {
+    const payroll = await this.payrollModel.findById(id);
+
+    if (!payroll) {
+      throw new NotFoundException('Payroll not found');
+    }
+
+    const employee = await this.employeeModel.findById(payroll.employeeId);
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    await this.findAccessibleEmployee(employee._id.toString(), currentUser);
+    return payroll;
+  }
 
   private getMonthRange(month: string) {
     const [year, monthNumber] = month.split('-').map(Number);
@@ -33,12 +115,8 @@ export class PayrollService {
     };
   }
 
-  async generate(dto: GeneratePayrollDto) {
-    const employee = await this.employeeModel.findById(dto.employeeId);
-
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
+  async generate(dto: GeneratePayrollDto, currentUser: RequestUser) {
+    const employee = await this.findAccessibleEmployee(dto.employeeId, currentUser);
 
     const existing = await this.payrollModel.findOne({
       employeeId: new Types.ObjectId(dto.employeeId),
@@ -107,6 +185,7 @@ export class PayrollService {
 
     const payload = {
       employeeId: new Types.ObjectId(dto.employeeId),
+      companyId: employee.companyId,
       month: dto.month,
       presentDays,
       absentDays,
@@ -133,24 +212,28 @@ export class PayrollService {
     return payroll;
   }
 
-  async findAll() {
+  async findAll(currentUser: RequestUser) {
     return this.payrollModel
-      .find()
+      .find(this.buildPayrollFilter(currentUser))
       .sort({ month: -1, createdAt: -1 })
       .populate('employeeId');
   }
 
-  async findByEmployee(employeeId: string) {
+  async findByEmployee(employeeId: string, currentUser: RequestUser) {
+    const employee = await this.findAccessibleEmployee(employeeId, currentUser);
+
     return this.payrollModel
-      .find({ employeeId: new Types.ObjectId(employeeId) })
+      .find({ employeeId: employee._id })
       .sort({ month: -1 })
       .populate('employeeId');
   }
 
-  async findOneByEmployeeAndMonth(employeeId: string, month: string) {
+  async findOneByEmployeeAndMonth(employeeId: string, month: string, currentUser: RequestUser) {
+    const employee = await this.findAccessibleEmployee(employeeId, currentUser);
+
     const payroll = await this.payrollModel
       .findOne({
-        employeeId: new Types.ObjectId(employeeId),
+        employeeId: employee._id,
         month,
       })
       .populate('employeeId');
@@ -162,7 +245,9 @@ export class PayrollService {
     return payroll;
   }
 
-  async finalize(id: string) {
+  async finalize(id: string, currentUser: RequestUser) {
+    await this.findAccessiblePayroll(id, currentUser);
+
     const payroll = await this.payrollModel.findByIdAndUpdate(
       id,
       { status: 'finalized' },

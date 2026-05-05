@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { normalizeRole } from '../common/utils/role.utils';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -27,7 +28,15 @@ export class AuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: this.configService.get<string>('JWT_SECRET') || 'secretKey',
       });
-      request['user'] = payload;
+      const userId = payload.userId || payload.sub;
+
+      request['user'] = {
+        ...payload,
+        sub: userId,
+        userId,
+        role: normalizeRole(payload.role) || payload.role,
+        companyId: payload.companyId || null,
+      };
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }

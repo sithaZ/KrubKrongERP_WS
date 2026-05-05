@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
@@ -17,37 +18,38 @@ import { Role } from '../common/enums/role.enum';
 
 @Controller('employees')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.OWNER)
+@Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Post()
-  create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeesService.create(createEmployeeDto);
+  create(@Body() createEmployeeDto: CreateEmployeeDto, @Request() req: any) {
+    return this.employeesService.create(createEmployeeDto, req.user);
   }
 
   @Get()
-  findAll() {
-    return this.employeesService.findAll();
+  findAll(@Request() req: any) {
+    return this.employeesService.findAll(req.user);
   }
 
   @Get('active')
-  findActive() {
-    return this.employeesService.findActive();
+  findActive(@Request() req: any) {
+    return this.employeesService.findActive(req.user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.employeesService.findOne(id);
+  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE, Role.OWNER, Role.STAFF)
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.employeesService.findOne(id, req.user);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
-    return this.employeesService.update(id, updateEmployeeDto);
+  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto, @Request() req: any) {
+    return this.employeesService.update(id, updateEmployeeDto, req.user);
   }
 
   @Patch(':id/deactivate')
-  deactivate(@Param('id') id: string) {
-    return this.employeesService.deactivate(id);
+  deactivate(@Param('id') id: string, @Request() req: any) {
+    return this.employeesService.deactivate(id, req.user);
   }
 }

@@ -3,6 +3,8 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
+import { normalizeRole } from '../common/utils/role.utils';
+import { Role } from '../common/enums/role.enum';
 
 @Injectable()
 export class AuthService {
@@ -10,6 +12,28 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService
   ) {}
+
+  private buildAuthResponse(user: any, token: string) {
+    const normalizedRole = normalizeRole(user.role) || user.role;
+
+    return {
+      token,
+      access_token: token,
+      refreshToken: token,
+      role: normalizedRole,
+      username: user.username,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: normalizedRole,
+        avatar: user.avatar || null,
+        phone: user.phone || null,
+        isActive: user.isActive,
+        companyId: user.companyId ? user.companyId.toString() : null,
+      },
+    };
+  }
 
   async register(registerDto: RegisterDto) {
     const salt = await bcrypt.genSalt(10);
@@ -21,30 +45,22 @@ export class AuthService {
       password: hashedPassword,
       name: registerDto.name,
       phone: registerDto.phone,
-      role: registerDto.role || 'STAFF',
+      role: normalizeRole(registerDto.role) || Role.EMPLOYEE,
+      companyId: registerDto.companyId,
     };
 
     const user = await this.usersService.create(userData);
+    const normalizedRole = normalizeRole(user.role) || user.role;
 
     const token = await this.jwtService.signAsync({
       sub: user._id.toString(),
+      userId: user._id.toString(),
       email: user.email,
-      role: user.role
+      role: normalizedRole,
+      companyId: user.companyId ? user.companyId.toString() : null,
     });
 
-    return {
-      token,
-      refreshToken: token,
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar || null,
-        phone: user.phone || null,
-        isActive: user.isActive,
-      },
-    };
+    return this.buildAuthResponse(user, token);
   }
 
   async login(email: string, password: string) {
@@ -58,25 +74,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const normalizedRole = normalizeRole(user.role) || user.role;
+
     const token = await this.jwtService.signAsync({
       sub: user._id.toString(),
+      userId: user._id.toString(),
       email: user.email,
-      role: user.role
+      role: normalizedRole,
+      companyId: user.companyId ? user.companyId.toString() : null,
     });
 
-    return {
-      token,
-      refreshToken: token,
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar || null,
-        phone: user.phone || null,
-        isActive: user.isActive,
-      },
-    };
+    return this.buildAuthResponse(user, token);
   }
 
   async getCurrentUser(userId: string) {
@@ -89,10 +97,11 @@ export class AuthService {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: normalizeRole(user.role) || user.role,
       avatar: user.avatar || null,
       phone: user.phone || null,
       isActive: user.isActive,
+      companyId: user.companyId ? user.companyId.toString() : null,
     };
   }
 }

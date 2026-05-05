@@ -13,8 +13,8 @@
 
           <form @submit.prevent="handleLogin" class="modern-form">
             <div class="input-wrapper">
-              <input type="text" v-model="username" required placeholder=" " />
-              <label>Username</label>
+              <input type="email" v-model="email" required placeholder=" " />
+              <label>Email</label>
               <div class="underline"></div>
             </div>
 
@@ -98,11 +98,19 @@ const typeEffect = () => {
 onMounted(() => { typeEffect(); });
 
 
-const username = ref('');
+const email = ref('');
 const password = ref('');
 const errorMessage = ref('');
 const isLoading = ref(false);
 const router = useRouter();
+
+const clearAuthStorage = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('user_role');
+  localStorage.removeItem('username');
+};
 
 
 const handleLogin = async () => {
@@ -113,29 +121,27 @@ const handleLogin = async () => {
     const response = await fetch('http://localhost:3000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: username.value, password: password.value }),
+      body: JSON.stringify({ email: email.value, password: password.value }),
     });
 
     if (response.ok) {
       const data = await response.json();
+      const role = data.role || data.user?.role;
+      const token = data.access_token || data.token;
 
-      if (data.role !== 'ADMIN') {
+      if (role !== 'ADMIN' || !token) {
         errorMessage.value = 'Access denied. web_admin is available for ADMIN users only.';
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user_role');
-        localStorage.removeItem('username');
+        clearAuthStorage();
         return;
       }
 
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('role', data.role);
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
 
       // Keep legacy keys temporarily so existing API calls continue to work.
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('user_role', data.role);
-      localStorage.setItem('username', data.username || username.value);
+      localStorage.setItem('access_token', token);
+      localStorage.setItem('user_role', role);
+      localStorage.setItem('username', data.username || data.user?.name || email.value);
       router.push('/dashboard');
     } else {
       const errorData = await response.json();

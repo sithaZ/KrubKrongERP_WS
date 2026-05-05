@@ -15,6 +15,10 @@ export class CreateEmployeeDto {
   @IsMongoId()
   userId?: string;
 
+  @IsOptional()
+  @IsMongoId()
+  companyId?: string;
+
   @IsString()
   fullName: string;
 
