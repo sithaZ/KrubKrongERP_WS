@@ -14,15 +14,23 @@ class StaffRepositoryImpl implements StaffRepository {
 
   @override
   Future<Either<app_errors.Failure, List<Employee>>> getEmployees() async {
-    if (!await _networkInfo.isConnected) {
-      return left(const app_errors.NetworkFailure(message: 'No internet connection'));
+    final isConnected = await _networkInfo.isConnected;
+    if (!isConnected) {
+      print(
+        'StaffRepositoryImpl.getEmployees: connectivity checker returned false; continuing with Dio request.',
+      );
     }
 
     try {
       final models = await _remoteDataSource.getEmployees();
       return right(models.map((m) => m.toEntity()).toList());
-    } catch (e) {
-      return left(app_errors.ServerFailure(message: e.toString()));
+    } on Exception catch (e, stackTrace) {
+      return left(e.toFailure(stackTrace: stackTrace));
+    } catch (e, stackTrace) {
+      return left(app_errors.UnknownFailure(
+        message: e.toString(),
+        stackTrace: stackTrace,
+      ));
     }
   }
 

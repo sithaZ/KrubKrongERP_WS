@@ -105,8 +105,12 @@ class AuthTokensModel {
   factory AuthTokensModel.fromJson(Map<String, dynamic> json) {
     return AuthTokensModel(
       accessToken:
-          json['access_token'] as String? ?? json['token'] as String? ?? '',
+          json['accessToken'] as String? ??
+          json['access_token'] as String? ??
+          json['token'] as String? ??
+          '',
       refreshToken: json['refreshToken'] as String? ??
+          json['accessToken'] as String? ??
           json['refresh_token'] as String? ??
           json['access_token'] as String? ??
           json['token'] as String? ??

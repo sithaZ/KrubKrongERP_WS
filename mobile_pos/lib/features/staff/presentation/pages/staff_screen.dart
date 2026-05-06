@@ -5,25 +5,19 @@ import '../providers/staff_provider.dart';
 
 /// Staff management screen
 class StaffScreen extends ConsumerWidget {
-  const StaffScreen({super.key});
+  const StaffScreen({
+    super.key,
+    this.showAppBar = true,
+  });
+
+  final bool showAppBar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final employeesAsync = ref.watch(employeesProvider);
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Staff Management'),
-        actions: [
-          IconButton(
-            onPressed: () => _showAddStaffUnavailable(context),
-            icon: const Icon(Icons.person_add_outlined),
-            tooltip: 'Add Staff',
-          ),
-        ],
-      ),
-      body: employeesAsync.when(
+    final body = employeesAsync.when(
         data: (employees) {
           if (employees.isEmpty) {
             return EmptyStateWidget(
@@ -56,7 +50,24 @@ class StaffScreen extends ConsumerWidget {
           message: error.toString(),
           onRetry: () => ref.refresh(employeesProvider),
         ),
+      );
+
+    if (!showAppBar) {
+      return body;
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Staff Management'),
+        actions: [
+          IconButton(
+            onPressed: () => _showAddStaffUnavailable(context),
+            icon: const Icon(Icons.person_add_outlined),
+            tooltip: 'Add Staff',
+          ),
+        ],
       ),
+      body: body,
     );
   }
 
