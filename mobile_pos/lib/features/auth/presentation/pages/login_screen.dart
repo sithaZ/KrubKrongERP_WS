@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_text_field.dart';
 
-/// Login Screen
-/// Clean, modern UI with form validation and loading states
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -20,7 +17,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
 
   @override
   void dispose() {
@@ -31,13 +27,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _handleLogin() {
     if (_formKey.currentState?.validate() ?? false) {
+      final email = _emailController.text.trim();
+      print('Sign In pressed');
+      print('Email: $email');
+
       ref.read(authProvider.notifier).login(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
+            email,
+            _passwordController.text,
+          );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +44,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Listen for auth errors and show modern alert
     ref.listen(authProvider, (previous, next) {
       if (next.status == AuthStatus.error && next.failure != null) {
         ModernAlert.showError(context, next.failure!.message);
@@ -66,26 +64,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 48),
-                  
-                  // Logo
                   Center(
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.point_of_sale,
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: AppLogo(size: 80, color: colorScheme.primary),
                   ),
                   const SizedBox(height: 32),
-
-                  // Title
                   Text(
                     'Welcome Back!',
                     style: theme.textTheme.displaySmall?.copyWith(
@@ -96,15 +78,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in to your ERP account',
+                    'Sign in with your manager or employee account',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 48),
-
-                  // Email field
                   AuthTextField(
                     controller: _emailController,
                     label: 'Email',
@@ -115,8 +95,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     validator: Validators.email,
                   ),
                   const SizedBox(height: 20),
-
-                  // Password field
                   AuthTextField(
                     controller: _passwordController,
                     label: 'Password',
@@ -141,55 +119,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Remember me & Forgot password
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: Checkbox(
-                              value: _rememberMe,
-                              onChanged: (value) {
-                                setState(() {
-                                  _rememberMe = value ?? false;
-                                });
-                              },
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Remember me',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color:
+                          colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      'This app currently supports MANAGER and EMPLOYEE accounts only.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
-                      TextButton(
-                        onPressed: () {
-                          // TODO: Navigate to forgot password
-                        },
-                        child: Text(
-                          'Forgot Password?',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   const SizedBox(height: 32),
-
-                  // Login button
                   ElevatedButton(
                     onPressed: authState.isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(

@@ -36,7 +36,7 @@ class ProfileScreen extends ConsumerWidget {
                     radius: 60,
                     backgroundColor: colorScheme.primaryContainer,
                     child: Text(
-                      user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                      user?.initials ?? 'U',
                       style: theme.textTheme.displayMedium?.copyWith(
                         color: colorScheme.onPrimaryContainer,
                         fontWeight: FontWeight.bold,
@@ -71,7 +71,7 @@ class ProfileScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                user?.role.name.toUpperCase() ?? 'ROLE',
+                user?.roleLabel ?? 'ROLE',
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSecondaryContainer,
                   fontWeight: FontWeight.bold,

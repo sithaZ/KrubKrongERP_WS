@@ -14,7 +14,11 @@ class HttpClientConfig {
   /// Initialize the Dio HTTP client
   void initialize() {
     final baseUrl =
-        dotenv.env[AppConstants.restApiEndpoint] ?? 'http://localhost:3000/api';
+        dotenv.env[AppConstants.restApiEndpoint] ?? 'http://10.0.2.2:3000/api';
+
+    if (kDebugMode) {
+      print('Resolved baseUrl: $baseUrl');
+    }
 
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
@@ -72,6 +76,7 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     print('REQUEST[${options.method}] => PATH: ${options.path}');
+    print('BASE URL: ${options.baseUrl}');
     print('Headers: ${options.headers}');
     if (options.data != null) {
       print('Data: ${options.data}');

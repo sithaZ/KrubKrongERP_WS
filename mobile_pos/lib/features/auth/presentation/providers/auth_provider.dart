@@ -89,6 +89,8 @@ class AuthState {
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isUnauthenticated => status == AuthStatus.unauthenticated;
+  bool get isManager => user?.isManager ?? false;
+  bool get isEmployee => user?.isEmployee ?? false;
 }
 
 /// Auth state notifier - manages authentication state
@@ -155,16 +157,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
                 state = state.copyWith(isLoading: false);
               } else {
                 state = state.copyWith(
-                  status: AuthStatus.unauthenticated,
+                  status: AuthStatus.error,
+                  failure: failure,
                   isLoading: false,
                 );
               }
             },
-            (user) => state = state.copyWith(
-              status: AuthStatus.authenticated,
-              user: user,
-              isLoading: false,
-            ),
+            (user) {
+              if (!user.hasSupportedRole) {
+                state = state.copyWith(
+                  status: AuthStatus.unauthenticated,
+                  isLoading: false,
+                  failure: const app_errors.AuthFailure(
+                    message:
+                        'This app supports MANAGER and EMPLOYEE accounts only.',
+                  ),
+                );
+                return;
+              }
+
+              state = state.copyWith(
+                status: AuthStatus.authenticated,
+                user: user,
+                isLoading: false,
+              );
+            },
           );
         } else {
           state = state.copyWith(
@@ -198,11 +215,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
             status: AuthStatus.authenticated,
             isLoading: false,
           ),
-          (user) => state = state.copyWith(
-            status: AuthStatus.authenticated,
-            user: user,
-            isLoading: false,
-          ),
+          (user) {
+            if (!user.hasSupportedRole) {
+              state = state.copyWith(
+                status: AuthStatus.error,
+                isLoading: false,
+                failure: const app_errors.AuthFailure(
+                  message:
+                      'This app supports MANAGER and EMPLOYEE accounts only.',
+                ),
+              );
+              return;
+            }
+
+            state = state.copyWith(
+              status: AuthStatus.authenticated,
+              user: user,
+              isLoading: false,
+            );
+          },
         );
       },
     );
@@ -235,11 +266,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
             status: AuthStatus.authenticated,
             isLoading: false,
           ),
-          (user) => state.copyWith(
-            status: AuthStatus.authenticated,
-            user: user,
-            isLoading: false,
-          ),
+          (user) {
+            if (!user.hasSupportedRole) {
+              state = state.copyWith(
+                status: AuthStatus.error,
+                isLoading: false,
+                failure: const app_errors.AuthFailure(
+                  message:
+                      'This app supports MANAGER and EMPLOYEE accounts only.',
+                ),
+              );
+              return;
+            }
+
+            state = state.copyWith(
+              status: AuthStatus.authenticated,
+              user: user,
+              isLoading: false,
+            );
+          },
         );
       },
     );

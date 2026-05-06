@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../providers/staff_provider.dart';
-import '../../../../core/router/app_router.dart';
 
 /// Staff management screen
 class StaffScreen extends ConsumerWidget {
@@ -19,7 +17,7 @@ class StaffScreen extends ConsumerWidget {
         title: const Text('Staff Management'),
         actions: [
           IconButton(
-            onPressed: () => context.push(AppRoutes.addStaff),
+            onPressed: () => _showAddStaffUnavailable(context),
             icon: const Icon(Icons.person_add_outlined),
             tooltip: 'Add Staff',
           ),
@@ -33,7 +31,7 @@ class StaffScreen extends ConsumerWidget {
               subMessage: 'Add your first employee to start managing your team.',
               icon: Icons.people_outline,
               action: ElevatedButton.icon(
-                onPressed: () => context.push(AppRoutes.addStaff),
+                onPressed: () => _showAddStaffUnavailable(context),
                 icon: const Icon(Icons.add),
                 label: const Text('Add Staff'),
               ),
@@ -58,6 +56,14 @@ class StaffScreen extends ConsumerWidget {
           message: error.toString(),
           onRetry: () => ref.refresh(employeesProvider),
         ),
+      ),
+    );
+  }
+
+  void _showAddStaffUnavailable(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Add staff routing is not available in Phase 2.1 yet.'),
       ),
     );
   }

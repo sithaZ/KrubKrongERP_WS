@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../../core/errors/failures.dart' as app_errors;
 import '../../../../core/constants/api_constants.dart';
@@ -25,6 +26,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<AuthResponseModel> login(String email, String password) async {
     try {
+      print('Resolved baseUrl: ${_client.options.baseUrl}');
+      print('Before POST ${ApiConstants.loginEndpoint}');
+
       final response = await _client.post(
         ApiConstants.loginEndpoint,
         data: {
@@ -44,6 +48,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on app_errors.AuthException {
       rethrow;
     } on DioException catch (e) {
+      print('Dio login error status: ${e.response?.statusCode}');
+      print('Dio login error response: ${e.response?.data}');
       throw _handleDioException(e);
     }
   }
@@ -102,45 +108,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<AuthTokensModel> refreshToken(String refreshToken) async {
-    try {
-      final response = await _client.post(
-        ApiConstants.refreshTokenEndpoint,
-        data: {'refreshToken': refreshToken},
-      );
-
-      final data = response.data as Map<String, dynamic>?;
-      if (data == null) {
-        throw app_errors.AuthException('Token refresh failed');
-      }
-
-      return AuthTokensModel.fromJson(data);
-    } on app_errors.AuthException {
-      rethrow;
-    } on DioException catch (e) {
-      throw _handleDioException(e);
-    }
+    throw app_errors.AuthException(
+      'Refresh token endpoint is not available in the current backend.',
+    );
   }
 
   @override
   Future<void> logout() async {
-    try {
-      await _client.post(ApiConstants.logoutEndpoint);
-    } catch (e) {
-      // Even if server logout fails, clear local session
-    }
-
-    // Clear all stored auth data
     await _secureStorage.delete(AppConstants.authTokenKey);
     await _secureStorage.delete(AppConstants.refreshTokenKey);
+    await _secureStorage.delete(AppConstants.userRoleKey);
+    await _secureStorage.delete(AppConstants.companyIdKey);
     await _secureStorage.delete(AppConstants.userDataKey);
   }
 
   /// Convert DioException to appropriate exception
   Never _handleDioException(DioException e) {
     if (e.response?.statusCode == 401) {
-      throw app_errors.AuthException(
-        e.response?.data['message'] ?? 'Unauthorized',
-      );
+      throw app_errors.AuthException('Invalid email or password');
     }
     if (e.response?.statusCode == 400) {
       final errors = e.response?.data['errors'] as Map<String, dynamic>?;
@@ -161,9 +146,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'Connection timeout. Please check your internet connection.',
       );
     }
-    if (e.type == DioExceptionType.connectionError) {
+    if (e.type == DioExceptionType.connectionError ||
+        e.error is SocketException) {
       throw app_errors.NetworkException(
-        'Network connection failed. Please check your internet connection.',
+        'No internet connection. Please check your network.',
       );
     }
     throw app_errors.ServerException(

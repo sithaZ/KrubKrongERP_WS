@@ -8,6 +8,8 @@ abstract class AppConstants {
   // Storage Keys
   static const String authTokenKey = 'auth_token';
   static const String refreshTokenKey = 'refresh_token';
+  static const String userRoleKey = 'user_role';
+  static const String companyIdKey = 'company_id';
   static const String userDataKey = 'user_data';
   static const String themeModeKey = 'theme_mode';
 

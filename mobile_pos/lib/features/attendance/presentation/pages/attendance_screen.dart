@@ -11,7 +11,12 @@ import '../providers/attendance_provider.dart';
 import '../../data/services/attendance_service.dart';
 
 class AttendanceScreen extends ConsumerWidget {
-  const AttendanceScreen({super.key});
+  const AttendanceScreen({
+    super.key,
+    this.showAppBar = true,
+  });
+
+  final bool showAppBar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,11 +24,17 @@ class AttendanceScreen extends ConsumerWidget {
     final user = authState.user;
     final isOwner = (user?.isOwner ?? false) || (user?.isAdmin ?? false);
 
+    final body = isOwner ? const OwnerAttendanceView() : const StaffAttendanceView();
+
+    if (!showAppBar) {
+      return body;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Attendance'),
       ),
-      body: isOwner ? const OwnerAttendanceView() : const StaffAttendanceView(),
+      body: body,
     );
   }
 }
@@ -92,6 +103,54 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
     }
   }
 
+  Future<void> _handleCheckOut() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      _isScanning = false;
+    });
+
+    try {
+      final service = ref.read(attendanceServiceProvider);
+      final authState = ref.read(authProvider);
+      final position = await service.getCurrentPosition();
+
+      await service.checkOut(
+        employeeId: authState.user!.id,
+        lat: position.latitude,
+        lng: position.longitude,
+      );
+
+      ref.invalidate(employeeAttendanceHistoryProvider(authState.user!.id));
+      ref.invalidate(attendanceRecordsProvider);
+
+      if (mounted) {
+        ModernAlert.show(
+          context,
+          title: 'Success!',
+          message: 'You have clocked out successfully.',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ModernAlert.show(
+          context,
+          title: 'Error',
+          message: e.toString(),
+          icon: Icons.error_outline,
+          iconColor: Colors.red,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -107,7 +166,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
               const Icon(Icons.qr_code_scanner, size: 60, color: Colors.blue),
               const SizedBox(height: 16),
               const Text(
-                'Scan to Clock In',
+                'Attendance Actions',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
@@ -131,13 +190,30 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                   ),
                 )
               else
-                ElevatedButton.icon(
-                  onPressed: () => setState(() => _isScanning = true),
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Open Scanner'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => setState(() => _isScanning = true),
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text('Check In'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _handleCheckOut,
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Check Out'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               if (_isLoading) ...[
                 const SizedBox(height: 16),
