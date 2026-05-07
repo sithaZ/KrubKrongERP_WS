@@ -9,6 +9,7 @@ import CatalogView from '../views/CatalogView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import AttendanceView from '../views/AttendanceView.vue';
 import PayrollView from '../views/PayrollView.vue';
+import ShopsView from '../views/ShopsView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +34,11 @@ const router = createRouter({
         path: 'attendance',
         name: 'attendance',
         component: AttendanceView,
+        },
+        {
+          path: 'shops',
+          name: 'shops',
+          component: ShopsView
         },
         {
          

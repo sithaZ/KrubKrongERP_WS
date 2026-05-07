@@ -52,6 +52,10 @@ export class EmployeesService {
       return new Types.ObjectId(currentUser.companyId);
     }
 
+    if (normalizedRole === Role.ADMIN && !companyId) {
+      throw new BadRequestException('shopId/companyId is required for ADMIN employee creation');
+    }
+
     return this.toObjectId(companyId);
   }
 

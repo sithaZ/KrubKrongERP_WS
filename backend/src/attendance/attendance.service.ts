@@ -53,9 +53,21 @@ export class AttendanceService {
       };
     }
 
-    return {
-      employeeId: { $in: [] as Types.ObjectId[] },
-    };
+    return null;
+  }
+
+  private async resolveCurrentEmployee(currentUser: RequestUser) {
+    const employee = await this.employeeModel.findOne({
+      userId: new Types.ObjectId(currentUser.userId),
+    });
+
+    if (!employee) {
+      throw new NotFoundException(
+        'Employee profile not found for the current account',
+      );
+    }
+
+    return employee;
   }
 
   private async findAccessibleEmployee(employeeId: string, currentUser: RequestUser) {
@@ -223,8 +235,19 @@ export class AttendanceService {
   }
 
   async findAll(currentUser: RequestUser) {
+    const accessFilter = this.buildAttendanceFilter(currentUser);
+
+    if (accessFilter) {
+      return this.attendanceModel
+        .find(accessFilter)
+        .sort({ workDate: -1, createdAt: -1 })
+        .populate('employeeId');
+    }
+
+    const employee = await this.resolveCurrentEmployee(currentUser);
+
     return this.attendanceModel
-      .find(this.buildAttendanceFilter(currentUser))
+      .find({ employeeId: employee._id })
       .sort({ workDate: -1, createdAt: -1 })
       .populate('employeeId');
   }

@@ -6,7 +6,7 @@ export class Employee extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: false })
   userId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: false, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'Company', required: false, index: true })
   companyId?: Types.ObjectId;
 
   @Prop({ required: true })

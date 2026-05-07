@@ -355,6 +355,10 @@ body {
   text-align: center;
 }
 
+.left-cell {
+  text-align: left !important;
+}
+
 .note-cell {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -468,7 +472,7 @@ body {
 
 .employees-table th:nth-child(3),
 .employees-table td:nth-child(3) {
-  width: 170px;
+  width: 180px;
 }
 
 .employees-table th:nth-child(4),
@@ -478,17 +482,22 @@ body {
 
 .employees-table th:nth-child(5),
 .employees-table td:nth-child(5) {
-  width: 190px;
+  width: 170px;
 }
 
 .employees-table th:nth-child(6),
 .employees-table td:nth-child(6) {
-  width: 150px;
-  text-align: center;
+  width: 190px;
 }
 
 .employees-table th:nth-child(7),
 .employees-table td:nth-child(7) {
+  width: 150px;
+  text-align: center;
+}
+
+.employees-table th:nth-child(8),
+.employees-table td:nth-child(8) {
   width: 230px;
   text-align: center;
 }
@@ -596,6 +605,46 @@ body {
 .payroll-table td:nth-child(11) {
   width: 130px;
   text-align: center;
+}
+
+/* Shops table */
+.shops-table {
+  min-width: 1540px;
+}
+
+.shops-table th:nth-child(1),
+.shops-table td:nth-child(1) {
+  width: 260px;
+}
+
+.shops-table th:nth-child(2),
+.shops-table td:nth-child(2) {
+  width: 240px;
+}
+
+.shops-table th:nth-child(3),
+.shops-table td:nth-child(3) {
+  width: 240px;
+}
+
+.shops-table th:nth-child(4),
+.shops-table td:nth-child(4) {
+  width: 140px;
+}
+
+.shops-table th:nth-child(5),
+.shops-table td:nth-child(5) {
+  width: 180px;
+}
+
+.shops-table th:nth-child(6),
+.shops-table td:nth-child(6) {
+  width: 130px;
+}
+
+.shops-table th:nth-child(7),
+.shops-table td:nth-child(7) {
+  width: 310px;
 }
 
 .modal-overlay {

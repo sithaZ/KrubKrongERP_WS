@@ -60,6 +60,19 @@
           Employees
         </router-link>
 
+        <router-link to="/shops" active-class="active">
+          <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9 12 4l9 5"/>
+            <path d="M4 10h16"/>
+            <path d="M6 10v8"/>
+            <path d="M10 10v8"/>
+            <path d="M14 10v8"/>
+            <path d="M18 10v8"/>
+            <path d="M3 18h18"/>
+          </svg>
+          Shops
+        </router-link>
+
         <router-link to="/attendance" active-class="active">
           <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 2v4"/>

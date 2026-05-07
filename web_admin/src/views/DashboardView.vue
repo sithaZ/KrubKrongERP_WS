@@ -1,55 +1,100 @@
 <template>
   <section class="content-area">
-    
     <div class="welcome-card">
       <div class="welcome-text">
-        <h2>Welcome back to Nexus ERP</h2>
-        <p>Here is what's happening with your business today.</p>
+        <h2>Business Overview</h2>
+        <p>Track your shop structure before drilling into HR operations.</p>
       </div>
-      <button class="action-btn">+ New Entry</button>
+      <button class="action-btn" type="button" @click="goToShops">Manage Shops</button>
     </div>
 
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-header">
-          <h3>Total Sales</h3>
+          <h3>Total Shops</h3>
           <div class="icon-box navy"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
         </div>
-        <p class="stat-number">$0.00</p>
-        <p class="stat-trend neutral">Waiting for data...</p>
+        <p class="stat-number">{{ stats.totalShops }}</p>
+        <p class="stat-trend neutral">All registered businesses</p>
       </div>
 
       <div class="stat-card">
         <div class="stat-header">
-          <h3>Total Products</h3>
+          <h3>Active Shops</h3>
           <div class="icon-box ocean"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2" ry="2"/><rect width="6" height="6" x="9" y="9" rx="1" ry="1"/></svg></div>
         </div>
-        <p class="stat-number">--</p>
-        <p class="stat-trend neutral">Waiting for data...</p>
+        <p class="stat-number">{{ stats.activeShops }}</p>
+        <p class="stat-trend neutral">Currently operating shops</p>
       </div>
 
       <div class="stat-card">
         <div class="stat-header">
-          <h3>Active Employees</h3>
+          <h3>Total Managers</h3>
           <div class="icon-box emerald"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         </div>
-        <p class="stat-number">--</p>
-        <p class="stat-trend neutral">Waiting for data...</p>
+        <p class="stat-number">{{ stats.totalManagers }}</p>
+        <p class="stat-trend neutral">Managers assigned to shops</p>
       </div>
 
       <div class="stat-card">
         <div class="stat-header">
-          <h3>Low Stock Alerts</h3>
+          <h3>Total Employees</h3>
           <div class="icon-box rose"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
         </div>
-        <p class="stat-number">0</p>
-        <p class="stat-trend success">All stock levels healthy</p>
+        <p class="stat-number">{{ stats.totalEmployees }}</p>
+        <p class="stat-trend success">Employees linked to business structure</p>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { onMounted, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+
+const API_BASE = 'http://localhost:3000/api'
+const router = useRouter()
+
+const stats = reactive({
+  totalShops: 0,
+  activeShops: 0,
+  totalManagers: 0,
+  totalEmployees: 0,
+})
+
+const getHeaders = () => {
+  const token = localStorage.getItem('token')
+  return {
+    Authorization: token ? `Bearer ${token}` : '',
+  }
+}
+
+const fetchStats = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/dashboard/stats`, {
+      headers: getHeaders(),
+    })
+
+    if (!response.ok) {
+      console.error('Failed to load dashboard stats:', await response.text())
+      return
+    }
+
+    const data = await response.json()
+    stats.totalShops = Number(data.totalShops || 0)
+    stats.activeShops = Number(data.activeShops || 0)
+    stats.totalManagers = Number(data.totalManagers || 0)
+    stats.totalEmployees = Number(data.totalEmployees || 0)
+  } catch (error) {
+    console.error('Dashboard stats error:', error)
+  }
+}
+
+const goToShops = () => {
+  router.push('/shops')
+}
+
+onMounted(fetchStats)
 
 </script>
 

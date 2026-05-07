@@ -47,29 +47,40 @@ async function seedManager() {
   const managerEmail = process.env.MANAGER_EMAIL!.trim().toLowerCase();
   const managerPassword = process.env.MANAGER_PASSWORD!;
 
-  let companyModel: Model<CompanyDocument>;
-  let userModel: Model<UserDocument>;
-
   try {
     console.log('[seed-manager] Connecting to MongoDB...');
     await mongoose.connect(mongoUri);
 
-    companyModel = mongoose.model<CompanyDocument>(Company.name, CompanySchema);
-    userModel = mongoose.model<UserDocument>(User.name, UserSchema);
+    const companyModel: Model<CompanyDocument> = mongoose.model<CompanyDocument>(
+      Company.name,
+      CompanySchema,
+    );
 
-    let company = await companyModel.findOne({ name: companyName });
+    const userModel: Model<UserDocument> = mongoose.model<UserDocument>(
+      User.name,
+      UserSchema,
+    );
+
+    let company = await companyModel.findOne({ shopName: companyName });
 
     if (company) {
       console.log(
-        `[seed-manager] Company already exists: ${company.name} (${company._id.toString()})`,
+        `[seed-manager] Company already exists: ${company.shopName} (${company._id.toString()})`,
       );
     } else {
       company = await companyModel.create({
-        name: companyName,
+        shopName: companyName,
+        ownerName: managerUsername,
+        ownerEmail: managerEmail,
+        phone: '',
+        address: '',
+        businessType: 'General',
+        status: 'active',
         isActive: true,
       });
+
       console.log(
-        `[seed-manager] Company created: ${company.name} (${company._id.toString()})`,
+        `[seed-manager] Company created: ${company.shopName} (${company._id.toString()})`,
       );
     }
 
@@ -86,8 +97,9 @@ async function seedManager() {
         existingManager.companyId = company._id;
         existingManager.role = Role.MANAGER;
         await existingManager.save();
+
         console.log(
-          `[seed-manager] Existing manager linked to company: ${company.name}`,
+          `[seed-manager] Existing manager linked to company: ${company.shopName}`,
         );
       }
 
@@ -108,7 +120,7 @@ async function seedManager() {
     });
 
     console.log(
-      `[seed-manager] Manager created: ${manager.email} -> company ${company.name}`,
+      `[seed-manager] Manager created: ${manager.email} -> company ${company.shopName}`,
     );
   } catch (error) {
     console.error('[seed-manager] Failed to seed manager/company data.');

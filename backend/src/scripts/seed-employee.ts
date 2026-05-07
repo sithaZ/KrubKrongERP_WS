@@ -111,7 +111,7 @@ async function seedEmployee() {
     userModel = mongoose.model<UserDocument>(User.name, UserSchema);
     employeeModel = mongoose.model<EmployeeDocument>(Employee.name, EmployeeSchema);
 
-    const company = await companyModel.findOne({ name: companyName });
+    const company = await companyModel.findOne({ shopName: companyName });
 
     if (!company) {
       console.log(`[seed-employee] Company not found: ${companyName}`);
@@ -128,7 +128,7 @@ async function seedEmployee() {
 
     if (!manager || normalizeRole(manager.role) !== Role.MANAGER) {
       console.log(
-        `[seed-employee] Manager not found for company: ${company.name}`,
+        `[seed-employee] Manager not found for company: ${company.shopName}`,
       );
       process.exitCode = 1;
       return;
@@ -283,7 +283,7 @@ async function seedEmployee() {
     });
 
     console.log(
-      `[seed-employee] Employee created: ${employeeEmail} -> company ${company.name}`,
+      `[seed-employee] Employee created: ${employeeEmail} -> company ${company.shopName}`,
     );
   } catch (error) {
     console.error('[seed-employee] Failed to seed employee data.');

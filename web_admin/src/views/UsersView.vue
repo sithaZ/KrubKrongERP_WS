@@ -47,6 +47,16 @@
         </div>
 
         <div class="form-group">
+          <label>Shop</label>
+          <select v-model="shopFilter" class="erp-select">
+            <option value="">All Shops</option>
+            <option v-for="shop in shops" :key="shop._id" :value="shop._id">
+              {{ shop.shopName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <button @click="fetchEmployees" class="erp-btn-secondary" type="button">
             Refresh
           </button>
@@ -61,6 +71,7 @@
             <tr>
               <th>Employee</th>
               <th>Code</th>
+              <th>Shop</th>
               <th>Position</th>
               <th>Department</th>
               <th>Salary</th>
@@ -77,14 +88,14 @@
                 class="skeleton-row"
                 aria-hidden="true"
               >
-                <td colspan="7">
+                <td colspan="8">
                   <div class="table-skeleton-line"></div>
                 </td>
               </tr>
             </template>
 
             <tr v-else-if="filteredEmployees.length === 0" class="state-row">
-              <td colspan="7">No employees found.</td>
+              <td colspan="8">No employees found.</td>
             </tr>
 
             <tr v-else v-for="employee in filteredEmployees" :key="employee._id">
@@ -100,6 +111,7 @@
               </td>
 
               <td class="muted">{{ employee.employeeCode || '-' }}</td>
+              <td>{{ getShopName(employee.companyId) }}</td>
               <td :title="employee.position || 'Staff'">{{ employee.position || 'Staff' }}</td>
               <td :title="employee.department || 'General'">{{ employee.department || 'General' }}</td>
               <td class="salary-cell">
@@ -184,6 +196,18 @@
                 <option value="IT">IT</option>
                 <option value="Admin">Admin</option>
                 <option value="General">General</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Shop</label>
+              <select v-model="formData.companyId" class="erp-select" required>
+                <option value="">Select shop</option>
+                <option v-for="shop in shops" :key="shop._id" :value="shop._id">
+                  {{ shop.shopName }}
+                </option>
               </select>
             </div>
           </div>
@@ -285,11 +309,18 @@ type Employee = {
   isActive: boolean
   phone?: string
   hireDate?: string
+  companyId?: string | { _id?: string; shopName?: string } | null
+}
+
+type Shop = {
+  _id: string
+  shopName: string
 }
 
 const API_BASE = 'http://localhost:3000/api'
 
 const employees = ref<Employee[]>([])
+const shops = ref<Shop[]>([])
 const isLoading = ref(true)
 const showModal = ref(false)
 const isEditing = ref(false)
@@ -300,11 +331,13 @@ const accountCredentials = ref<AccountCredentials | null>(null)
 const searchTerm = ref('')
 const statusFilter = ref('')
 const departmentFilter = ref('')
+const shopFilter = ref('')
 
 const formData = ref({
   fullName: '',
   email: '',
   employeeCode: '',
+  companyId: '',
   position: '',
   department: '',
   salaryType: 'monthly' as 'daily' | 'monthly',
@@ -348,9 +381,42 @@ const filteredEmployees = computed(() => {
     const matchDepartment =
       !departmentFilter.value || department === departmentFilter.value
 
-    return matchSearch && matchStatus && matchDepartment
+    const employeeShopId =
+      typeof employee.companyId === 'object' && employee.companyId
+        ? employee.companyId._id || ''
+        : employee.companyId || ''
+
+    const matchShop = !shopFilter.value || employeeShopId === shopFilter.value
+
+    return matchSearch && matchStatus && matchDepartment && matchShop
   })
 })
+
+const fetchShops = async () => {
+  try {
+    const res = await fetch(`${API_BASE}/shops`, { headers: getHeaders() })
+    if (!res.ok) {
+      console.error('Failed to fetch shops:', await res.text())
+      shops.value = []
+      return
+    }
+
+    const data = await res.json()
+    shops.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Fetch shops error:', error)
+    shops.value = []
+  }
+}
+
+const getShopName = (companyId?: string | { _id?: string; shopName?: string } | null) => {
+  if (!companyId) return '-'
+  if (typeof companyId === 'object') {
+    return companyId.shopName || '-'
+  }
+
+  return shops.value.find((shop) => shop._id === companyId)?.shopName || '-'
+}
 
 const fetchEmployees = async () => {
   isLoading.value = true
@@ -379,6 +445,7 @@ const openAddModal = () => {
     fullName: '',
     email: '',
     employeeCode: '',
+    companyId: '',
     position: '',
     department: '',
     salaryType: 'monthly',
@@ -397,6 +464,10 @@ const openEditModal = (employee: Employee) => {
     fullName: employee.fullName || '',
     email: employee.email || '',
     employeeCode: employee.employeeCode || '',
+    companyId:
+      typeof employee.companyId === 'object' && employee.companyId
+        ? employee.companyId._id || ''
+        : employee.companyId || '',
     position: employee.position || '',
     department: employee.department || '',
     salaryType: employee.salaryType || 'monthly',
@@ -436,6 +507,7 @@ const saveEmployee = async () => {
   const payload = {
     fullName: formData.value.fullName,
     email: formData.value.email,
+    companyId: formData.value.companyId,
     position: formData.value.position,
     department: formData.value.department,
     salaryType: formData.value.salaryType,
@@ -504,5 +576,7 @@ const deactivateEmployee = async (id: string) => {
   }
 }
 
-onMounted(fetchEmployees)
+onMounted(async () => {
+  await Promise.all([fetchEmployees(), fetchShops()])
+})
 </script>

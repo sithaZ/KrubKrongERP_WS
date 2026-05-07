@@ -5,6 +5,8 @@ import { Order } from '../orders/order.entity';
 import { Product } from '../products/product.entity';
 import { Employee } from '../employees/employee.entity';
 import { User } from '../users/user.entity';
+import { Company } from '../companies/company.entity';
+import { Role } from '../common/enums/role.enum';
 
 @Injectable()
 export class DashboardService {
@@ -13,6 +15,7 @@ export class DashboardService {
     @InjectModel(Product.name) private productModel: Model<Product>,
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Company.name) private companyModel: Model<Company>,
   ) {}
 
   async getStats() {
@@ -30,6 +33,14 @@ export class DashboardService {
       isActive: true,
     });
     const totalUsers = await this.userModel.countDocuments({ isActive: true });
+    const totalShops = await this.companyModel.countDocuments();
+    const activeShops = await this.companyModel.countDocuments({
+      status: 'active',
+    });
+    const totalManagers = await this.userModel.countDocuments({
+      role: { $in: [Role.MANAGER, Role.OWNER, 'manager', 'owner'] },
+      isActive: true,
+    });
 
     const totalRevenue = await this.orderModel.aggregate([
       { $match: { status: 'completed' } },
@@ -43,6 +54,10 @@ export class DashboardService {
       lowStockProducts,
       totalStaff,
       totalUsers,
+      totalEmployees: totalStaff,
+      totalShops,
+      activeShops,
+      totalManagers,
       totalRevenue: totalRevenue[0]?.total || 0,
     };
   }

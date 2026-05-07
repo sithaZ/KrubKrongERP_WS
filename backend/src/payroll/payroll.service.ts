@@ -48,9 +48,21 @@ export class PayrollService {
       };
     }
 
-    return {
-      employeeId: { $in: [] as Types.ObjectId[] },
-    };
+    return null;
+  }
+
+  private async resolveCurrentEmployee(currentUser: RequestUser) {
+    const employee = await this.employeeModel.findOne({
+      userId: new Types.ObjectId(currentUser.userId),
+    });
+
+    if (!employee) {
+      throw new NotFoundException(
+        'Employee profile not found for the current account',
+      );
+    }
+
+    return employee;
   }
 
   private async findAccessibleEmployee(employeeId: string, currentUser: RequestUser) {
@@ -213,8 +225,19 @@ export class PayrollService {
   }
 
   async findAll(currentUser: RequestUser) {
+    const accessFilter = this.buildPayrollFilter(currentUser);
+
+    if (accessFilter) {
+      return this.payrollModel
+        .find(accessFilter)
+        .sort({ month: -1, createdAt: -1 })
+        .populate('employeeId');
+    }
+
+    const employee = await this.resolveCurrentEmployee(currentUser);
+
     return this.payrollModel
-      .find(this.buildPayrollFilter(currentUser))
+      .find({ employeeId: employee._id })
       .sort({ month: -1, createdAt: -1 })
       .populate('employeeId');
   }

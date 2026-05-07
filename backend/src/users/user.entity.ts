@@ -22,7 +22,7 @@ export class User extends Document {
   @Prop({ required: false })
   avatar?: string;
 
-  @Prop({ type: Types.ObjectId, required: false, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'Company', required: false, index: true })
   companyId?: Types.ObjectId;
 
   @Prop({ required: true, enum: Object.values(Role), default: Role.EMPLOYEE })

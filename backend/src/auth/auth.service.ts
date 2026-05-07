@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { normalizeRole } from '../common/utils/role.utils';
 import { Role } from '../common/enums/role.enum';
-
+import { Types } from 'mongoose';
 @Injectable()
 export class AuthService {
   constructor(
@@ -31,6 +31,7 @@ export class AuthService {
         phone: user.phone || null,
         isActive: user.isActive,
         companyId: user.companyId ? user.companyId.toString() : null,
+        shopId: user.companyId ? user.companyId.toString() : null,
       },
     };
   }
@@ -39,15 +40,17 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(registerDto.password, salt);
 
-    const userData = {
-      username: registerDto.email.split('@')[0],
-      email: registerDto.email,
-      password: hashedPassword,
-      name: registerDto.name,
-      phone: registerDto.phone,
-      role: normalizeRole(registerDto.role) || Role.EMPLOYEE,
-      companyId: registerDto.companyId,
-    };
+   const userData = {
+  username: registerDto.email.split('@')[0],
+  email: registerDto.email,
+  password: hashedPassword,
+  name: registerDto.name,
+  phone: registerDto.phone,
+  role: normalizeRole(registerDto.role) || Role.EMPLOYEE,
+  companyId: registerDto.companyId
+    ? new Types.ObjectId(registerDto.companyId)
+    : undefined,
+};
 
     const user = await this.usersService.create(userData);
     const normalizedRole = normalizeRole(user.role) || user.role;
@@ -58,6 +61,7 @@ export class AuthService {
       email: user.email,
       role: normalizedRole,
       companyId: user.companyId ? user.companyId.toString() : null,
+      shopId: user.companyId ? user.companyId.toString() : null,
     });
 
     return this.buildAuthResponse(user, token);
@@ -82,6 +86,7 @@ export class AuthService {
       email: user.email,
       role: normalizedRole,
       companyId: user.companyId ? user.companyId.toString() : null,
+      shopId: user.companyId ? user.companyId.toString() : null,
     });
 
     return this.buildAuthResponse(user, token);
@@ -102,6 +107,7 @@ export class AuthService {
       phone: user.phone || null,
       isActive: user.isActive,
       companyId: user.companyId ? user.companyId.toString() : null,
+      shopId: user.companyId ? user.companyId.toString() : null,
     };
   }
 }
