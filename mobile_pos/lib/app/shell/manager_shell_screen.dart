@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/attendance/presentation/pages/attendance_screen.dart';
 import '../../features/staff/presentation/pages/staff_screen.dart';
+import '../router/route_paths.dart';
 
 class ManagerShellScreen extends ConsumerStatefulWidget {
   const ManagerShellScreen({super.key});
@@ -34,6 +36,12 @@ class _ManagerShellScreenState extends ConsumerState<ManagerShellScreen> {
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
         actions: [
+          if (_selectedIndex == 1)
+            IconButton(
+              onPressed: () => context.push(AppRoutePaths.addStaff),
+              icon: const Icon(Icons.person_add_outlined),
+              tooltip: 'Add Staff',
+            ),
           IconButton(
             onPressed: () => ref.read(authProvider.notifier).logout(),
             icon: const Icon(Icons.logout),

@@ -7,6 +7,7 @@ import '../../app/shell/manager_shell_screen.dart';
 import '../../features/auth/domain/entities/user.dart';
 import '../../features/auth/presentation/pages/login_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/staff/presentation/pages/add_staff_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -40,10 +41,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         return targetRoute;
       }
 
+      final location = state.uri.path;
       final isManagerRoute =
-          state.matchedLocation.startsWith(AppRoutePaths.managerShell);
+          location.startsWith(AppRoutePaths.managerShell) ||
+          location.startsWith(AppRoutePaths.addStaff);
       final isEmployeeRoute =
-          state.matchedLocation.startsWith(AppRoutePaths.employeeShell);
+          location.startsWith(AppRoutePaths.employeeShell);
 
       if (user.role == UserRole.manager && !isManagerRoute) {
         return AppRoutePaths.managerShell;
@@ -67,6 +70,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutePaths.employeeShell,
         builder: (context, state) => const EmployeeShellScreen(),
+      ),
+      GoRoute(
+        path: AppRoutePaths.addStaff,
+        builder: (context, state) => const AddStaffScreen(),
       ),
     ],
   );

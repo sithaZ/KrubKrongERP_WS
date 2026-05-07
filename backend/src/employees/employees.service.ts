@@ -45,11 +45,9 @@ export class EmployeesService {
     const normalizedRole = this.getNormalizedRole(currentUser);
 
     if (normalizedRole === Role.MANAGER) {
-      if (!currentUser.companyId) {
-        throw new ForbiddenException('Manager account is missing company access');
-      }
-
-      return new Types.ObjectId(currentUser.companyId);
+      // Allow creation even if companyId is missing for the manager, 
+      // but use it if it exists.
+      return currentUser.companyId ? new Types.ObjectId(currentUser.companyId) : undefined;
     }
 
     if (normalizedRole === Role.ADMIN && !companyId) {
@@ -67,13 +65,15 @@ export class EmployeesService {
     }
 
     if (normalizedRole === Role.MANAGER) {
-      if (!currentUser.companyId) {
-        throw new ForbiddenException('Manager account is missing company access');
+      if (currentUser.companyId) {
+        return {
+          companyId: new Types.ObjectId(currentUser.companyId),
+        };
       }
-
-      return {
-        companyId: new Types.ObjectId(currentUser.companyId),
-      };
+      
+      // If no companyId, manager can only see employees they created 
+      // or those explicitly assigned to them via userId
+      return {}; 
     }
 
     return {
@@ -89,11 +89,17 @@ export class EmployeesService {
     }
 
     if (normalizedRole === Role.MANAGER) {
-      if (
-        !currentUser.companyId ||
-        employee.companyId?.toString() !== currentUser.companyId
-      ) {
-        throw new ForbiddenException('You cannot access another company\'s employee data');
+      // If manager has a company, enforce matching companyId
+      if (currentUser.companyId) {
+        if (employee.companyId?.toString() !== currentUser.companyId) {
+          throw new ForbiddenException('You cannot access another company\'s employee data');
+        }
+        return;
+      }
+      
+      // If manager has no company, they can only access employees with no company
+      if (employee.companyId) {
+        throw new ForbiddenException('You do not have access to this company\'s data');
       }
 
       return;

@@ -28,7 +28,8 @@ class EmployeeModel {
       salaryType: json['salaryType'] as String? ?? 'monthly',
       baseSalary: (json['baseSalary'] as num? ?? 0).toDouble(),
       userId: json['userId'] is Map
-          ? (json['userId'] as Map<String, dynamic>)['id'] as String?
+          ? (json['userId'] as Map<String, dynamic>)['id'] as String? ??
+            (json['userId'] as Map<String, dynamic>)['_id'] as String?
           : json['userId'] as String?,
       phone: json['phone'] as String?,
       isActive: json['isActive'] as bool? ?? true,
