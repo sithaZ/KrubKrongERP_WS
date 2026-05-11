@@ -34,10 +34,6 @@ export class PayrollService {
   private buildPayrollFilter(currentUser: RequestUser) {
     const normalizedRole = this.getNormalizedRole(currentUser);
 
-    if (normalizedRole === Role.ADMIN) {
-      return {};
-    }
-
     if (normalizedRole === Role.MANAGER) {
       if (!currentUser.companyId) {
         throw new ForbiddenException('Manager account is missing company access');
@@ -73,10 +69,6 @@ export class PayrollService {
     }
 
     const normalizedRole = this.getNormalizedRole(currentUser);
-
-    if (normalizedRole === Role.ADMIN) {
-      return employee;
-    }
 
     if (normalizedRole === Role.MANAGER) {
       if (

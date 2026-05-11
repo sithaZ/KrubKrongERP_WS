@@ -1,14 +1,12 @@
 <template>
-  <section class="page-shell">
+  <section class="content-area shops-page">
     <div class="page-header">
       <div>
-        <h2>Shops / Businesses</h2>
-        <p>Build the ERP flow from admin to shop manager, employee, attendance, and payroll.</p>
+        <h2>Shops</h2>
+        <p>Create shops, update business details, enable or disable access, and assign a shop owner.</p>
       </div>
 
-      <button class="erp-btn" type="button" @click="openCreateShopModal">
-        Create Shop
-      </button>
+      <button class="erp-btn" type="button" @click="openCreateModal">Add Shop</button>
     </div>
 
     <div class="erp-card toolbar-card">
@@ -18,8 +16,8 @@
           <input
             v-model="searchTerm"
             type="text"
-            placeholder="Search by shop, owner, or business type"
             class="erp-input"
+            placeholder="Shop name, owner, business type, or city"
           />
         </div>
 
@@ -33,20 +31,24 @@
         </div>
 
         <div class="form-group">
-          <label>Manager</label>
-          <select v-model="managerFilter" class="erp-select">
-            <option value="">All Managers</option>
-            <option value="assigned">Assigned</option>
-            <option value="unassigned">Unassigned</option>
+          <label>Subscription</label>
+          <select v-model="subscriptionFilter" class="erp-select">
+            <option value="">All</option>
+            <option v-for="item in subscriptionOptions" :key="item" :value="item">
+              {{ item }}
+            </option>
           </select>
         </div>
 
         <div class="form-group">
-          <button class="erp-btn-secondary" type="button" @click="refreshData">
-            Refresh
-          </button>
+          <button class="erp-btn-secondary" type="button" @click="loadPage">Refresh</button>
         </div>
       </div>
+    </div>
+
+    <div v-if="errorMessage" class="erp-card error-banner">
+      <strong>Unable to load shops.</strong>
+      <span>{{ errorMessage }}</span>
     </div>
 
     <div class="erp-card table-card">
@@ -55,65 +57,61 @@
           <thead>
             <tr>
               <th>Shop</th>
-              <th>Owner</th>
-              <th>Manager</th>
-              <th>Phone</th>
-              <th>Business Type</th>
+              <th>Shop Owner</th>
+              <th>Business</th>
               <th>Status</th>
+              <th>Subscription</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <template v-if="isLoading">
-              <tr v-for="row in skeletonRows" :key="`shop-skeleton-${row}`" class="skeleton-row">
-                <td colspan="7">
-                  <div class="table-skeleton-line"></div>
-                </td>
+              <tr v-for="row in 6" :key="row" class="skeleton-row">
+                <td colspan="6"><div class="table-skeleton-line"></div></td>
               </tr>
             </template>
 
             <tr v-else-if="filteredShops.length === 0" class="state-row">
-              <td colspan="7">No shops found.</td>
+              <td colspan="6">No shops match the current filters.</td>
             </tr>
 
-            <tr v-else v-for="shop in filteredShops" :key="shop._id">
-              <td>
-                <div class="user-cell">
-                  <div class="user-avatar">
-                    {{ (shop.shopName || 'S').charAt(0).toUpperCase() }}
-                  </div>
-                  <span :title="shop.shopName">{{ shop.shopName }}</span>
-                </div>
+            <tr v-for="shop in filteredShops" :key="shop._id">
+              <td class="left-cell">
+                <strong>{{ shop.shopName }}</strong><br />
+                <span class="muted">{{ shop.provinceOrCity || 'No city provided' }}</span>
               </td>
               <td class="left-cell">
-                <strong>{{ shop.ownerName }}</strong><br />
-                <span class="muted">{{ shop.ownerEmail }}</span>
-              </td>
-              <td class="left-cell">
-                <template v-if="shop.managerId && typeof shop.managerId === 'object'">
-                  <strong>{{ shop.managerId.name || 'Assigned Manager' }}</strong><br />
-                  <span class="muted">{{ shop.managerId.email || '-' }}</span>
+                <template v-if="shop.managerId">
+                  <strong>{{ shop.managerId.name }}</strong><br />
+                  <span class="muted">{{ shop.managerId.email }}</span>
                 </template>
-                <span v-else class="muted">Not assigned</span>
+                <template v-else-if="shop.ownerName || shop.ownerEmail">
+                  <strong>{{ shop.ownerName || 'Unassigned' }}</strong><br />
+                  <span class="muted">{{ shop.ownerEmail || 'No email provided' }}</span>
+                </template>
+                <span v-else class="muted">Unassigned</span>
               </td>
-              <td>{{ shop.phone || '-' }}</td>
-              <td>{{ shop.businessType || '-' }}</td>
+              <td class="left-cell">
+                <strong>{{ shop.businessType || 'General' }}</strong><br />
+                <span class="muted">{{ shop.whatTheySell || shop.description || 'No summary yet' }}</span>
+              </td>
               <td>
                 <span class="status-pill" :class="shop.status === 'active' ? 'active' : 'inactive'">
                   <span class="dot"></span>
-                  {{ shop.status }}
+                  {{ shop.status === 'active' ? 'Enabled' : 'Disabled' }}
+                </span>
+              </td>
+              <td>
+                <span class="status-pill" :class="subscriptionPillClass(shop.subscriptionStatus)">
+                  <span class="dot"></span>
+                  {{ shop.subscriptionStatus }}
                 </span>
               </td>
               <td>
                 <div class="actions-inline">
-                  <button class="erp-btn-soft" type="button" @click="openEditShopModal(shop)">
-                    Edit
-                  </button>
-                  <button class="erp-btn-secondary" type="button" @click="openAssignManagerModal(shop)">
-                    Assign Manager
-                  </button>
-                  <button class="erp-btn" type="button" @click="openCreateManagerModal(shop)">
-                    Create Manager
+                  <button class="erp-btn-soft" type="button" @click="openEditModal(shop)">Edit</button>
+                  <button class="erp-btn-secondary" type="button" @click="openAssignModal(shop)">
+                    Assign Shop Owner
                   </button>
                 </div>
               </td>
@@ -123,44 +121,67 @@
       </div>
     </div>
 
-    <div v-if="showShopModal" class="modal-overlay">
+    <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
           <div>
-            <h3>{{ isEditingShop ? 'Edit Shop' : 'Create Shop' }}</h3>
-            <p class="modal-subtitle">Set up the business first, then attach the right manager account.</p>
+            <h3>{{ isEditing ? 'Edit Shop' : 'Create Shop' }}</h3>
+            <p class="modal-subtitle">The backend may still store this as companyId, but the UI labels it as Shop.</p>
           </div>
-          <button class="close-btn" type="button" @click="closeShopModal">×</button>
+          <button class="close-btn" type="button" @click="closeModal">X</button>
         </div>
 
         <form class="modal-form" @submit.prevent="saveShop">
           <div class="form-row">
             <div class="form-group">
               <label>Shop Name</label>
-              <input v-model="shopForm.shopName" type="text" class="erp-input" required />
+              <input v-model="shopForm.shopName" class="erp-input" type="text" required />
             </div>
             <div class="form-group">
               <label>Business Type</label>
-              <input v-model="shopForm.businessType" type="text" class="erp-input" placeholder="Retail, Restaurant, Salon..." />
+              <input v-model="shopForm.businessType" class="erp-input" type="text" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>Owner Name</label>
-              <input v-model="shopForm.ownerName" type="text" class="erp-input" required />
+              <input v-model="shopForm.ownerName" class="erp-input" type="text" required />
             </div>
             <div class="form-group">
               <label>Owner Email</label>
-              <input v-model="shopForm.ownerEmail" type="email" class="erp-input" required />
+              <input v-model="shopForm.ownerEmail" class="erp-input" type="email" required />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>Phone</label>
-              <input v-model="shopForm.phone" type="text" class="erp-input" />
+              <input v-model="shopForm.phone" class="erp-input" type="text" />
             </div>
+            <div class="form-group">
+              <label>Province or City</label>
+              <input v-model="shopForm.provinceOrCity" class="erp-input" type="text" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Address</label>
+            <textarea v-model="shopForm.address" class="erp-textarea" rows="3"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Description</label>
+              <textarea v-model="shopForm.description" class="erp-textarea" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label>What They Sell</label>
+              <textarea v-model="shopForm.whatTheySell" class="erp-textarea" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
               <label>Status</label>
               <select v-model="shopForm.status" class="erp-select">
@@ -168,92 +189,58 @@
                 <option value="inactive">Inactive</option>
               </select>
             </div>
+            <div class="form-group">
+              <label>Subscription Status</label>
+              <select v-model="shopForm.subscriptionStatus" class="erp-select">
+                <option v-for="item in subscriptionOptions" :key="item" :value="item">
+                  {{ item }}
+                </option>
+              </select>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>Address</label>
-            <textarea v-model="shopForm.address" rows="3" class="erp-textarea"></textarea>
-          </div>
+          <p v-if="formError" class="form-error">{{ formError }}</p>
 
           <div class="modal-footer">
-            <button class="erp-btn-secondary" type="button" @click="closeShopModal">Cancel</button>
-            <button class="erp-btn" type="submit">{{ isEditingShop ? 'Save Changes' : 'Create Shop' }}</button>
+            <button class="erp-btn-secondary" type="button" @click="closeModal">Cancel</button>
+            <button class="erp-btn" type="submit" :disabled="isSaving">
+              {{ isSaving ? 'Saving...' : isEditing ? 'Save Shop' : 'Create Shop' }}
+            </button>
           </div>
         </form>
       </div>
     </div>
 
-    <div v-if="showAssignManagerModal" class="modal-overlay">
-      <div class="modal-content">
+    <div v-if="showAssignModal && selectedShop" class="modal-overlay">
+      <div class="modal-content assign-modal">
         <div class="modal-header">
           <div>
-            <h3>Assign Manager</h3>
-            <p class="modal-subtitle">Attach an existing manager to {{ selectedShop?.shopName || 'this shop' }}.</p>
+            <h3>Assign Shop Owner</h3>
+            <p class="modal-subtitle">Attach the shop owner account to {{ selectedShop.shopName }}.</p>
           </div>
-          <button class="close-btn" type="button" @click="closeAssignManagerModal">×</button>
+          <button class="close-btn" type="button" @click="closeAssignModal">X</button>
         </div>
 
-        <form class="modal-form" @submit.prevent="assignManager">
+        <div class="modal-form">
           <div class="form-group">
-            <label>Manager</label>
-            <select v-model="assignManagerForm.managerId" class="erp-select" required>
-              <option value="">Select manager</option>
+            <label>Shop Owner</label>
+            <select v-model="assignManagerId" class="erp-select">
+              <option value="">Choose a shop owner</option>
               <option v-for="manager in managers" :key="manager.id" :value="manager.id">
-                {{ manager.name }} ({{ manager.email }})
+                {{ manager.name }} - {{ manager.email }}
               </option>
             </select>
           </div>
 
-          <div class="modal-footer">
-            <button class="erp-btn-secondary" type="button" @click="closeAssignManagerModal">Cancel</button>
-            <button class="erp-btn" type="submit">Assign Manager</button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <p v-if="assignError" class="form-error">{{ assignError }}</p>
 
-    <div v-if="showCreateManagerModal" class="modal-overlay">
-      <div class="modal-content">
-        <div class="modal-header">
-          <div>
-            <h3>Create Shop Manager</h3>
-            <p class="modal-subtitle">Create a manager account directly under {{ selectedShop?.shopName || 'this shop' }}.</p>
+          <div class="modal-footer">
+            <button class="erp-btn-secondary" type="button" @click="closeAssignModal">Cancel</button>
+            <button class="erp-btn" type="button" :disabled="isAssigning" @click="assignManager">
+              {{ isAssigning ? 'Assigning...' : 'Assign Shop Owner' }}
+            </button>
           </div>
-          <button class="close-btn" type="button" @click="closeCreateManagerModal">×</button>
         </div>
-
-        <form class="modal-form" @submit.prevent="createManager">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Name</label>
-              <input v-model="managerForm.name" type="text" class="erp-input" required />
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input v-model="managerForm.email" type="email" class="erp-input" required />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Phone</label>
-              <input v-model="managerForm.phone" type="text" class="erp-input" />
-            </div>
-            <div class="form-group">
-              <label>Password</label>
-              <input v-model="managerForm.password" type="password" class="erp-input" required minlength="6" />
-            </div>
-          </div>
-
-          <div class="helper-box">
-            <strong>Note:</strong> The new manager will automatically belong to this shop and only see employees, attendance, and payroll inside it.
-          </div>
-
-          <div class="modal-footer">
-            <button class="erp-btn-secondary" type="button" @click="closeCreateManagerModal">Cancel</button>
-            <button class="erp-btn" type="submit">Create Manager</button>
-          </div>
-        </form>
       </div>
     </div>
   </section>
@@ -261,283 +248,265 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { ApiError, apiFetch } from '../lib/adminApi'
 
-type Manager = {
+type SubscriptionStatus = 'Trial' | 'Active' | 'Expired' | 'Suspended'
+
+type ManagerOption = {
   id: string
   name: string
   email: string
-  phone?: string | null
 }
-
-type ShopManagerRef =
-  | string
-  | {
-      _id?: string
-      name?: string
-      email?: string
-      phone?: string
-    }
-  | null
 
 type Shop = {
   _id: string
   shopName: string
+  businessType?: string
+  description?: string
+  whatTheySell?: string
+  address?: string
+  provinceOrCity?: string
+  phone?: string
   ownerName: string
   ownerEmail: string
-  phone?: string
-  address?: string
-  businessType?: string
   status: 'active' | 'inactive'
-  managerId?: ShopManagerRef
+  subscriptionStatus: SubscriptionStatus
+  managerId?: {
+    id?: string
+    _id?: string
+    name: string
+    email: string
+  } | null
 }
 
-const API_BASE = 'http://localhost:3000/api'
+const subscriptionOptions: SubscriptionStatus[] = ['Trial', 'Active', 'Expired', 'Suspended']
 
 const shops = ref<Shop[]>([])
-const managers = ref<Manager[]>([])
+const managers = ref<ManagerOption[]>([])
 const isLoading = ref(true)
+const isSaving = ref(false)
+const isAssigning = ref(false)
+const errorMessage = ref('')
+const formError = ref('')
+const assignError = ref('')
+
 const searchTerm = ref('')
 const statusFilter = ref('')
-const managerFilter = ref('')
-const skeletonRows = Array.from({ length: 6 }, (_, index) => index)
+const subscriptionFilter = ref('')
 
-const showShopModal = ref(false)
-const isEditingShop = ref(false)
+const showModal = ref(false)
+const isEditing = ref(false)
 const currentShopId = ref('')
 
-const showAssignManagerModal = ref(false)
-const showCreateManagerModal = ref(false)
+const showAssignModal = ref(false)
 const selectedShop = ref<Shop | null>(null)
+const assignManagerId = ref('')
 
-const shopForm = ref({
+const emptyShopForm = () => ({
   shopName: '',
+  businessType: '',
+  description: '',
+  whatTheySell: '',
+  address: '',
+  provinceOrCity: '',
+  phone: '',
   ownerName: '',
   ownerEmail: '',
-  phone: '',
-  address: '',
-  businessType: '',
-  status: 'active' as 'active' | 'inactive',
+  status: 'active' as const,
+  subscriptionStatus: 'Trial' as SubscriptionStatus,
 })
 
-const assignManagerForm = ref({
-  managerId: '',
-})
-
-const managerForm = ref({
-  name: '',
-  email: '',
-  phone: '',
-  password: '',
-})
-
-const getHeaders = () => {
-  const token = localStorage.getItem('token')
-  return {
-    'Content-Type': 'application/json',
-    Authorization: token ? `Bearer ${token}` : '',
-  }
-}
+const shopForm = ref(emptyShopForm())
 
 const filteredShops = computed(() => {
-  const search = searchTerm.value.toLowerCase().trim()
+  const search = searchTerm.value.trim().toLowerCase()
 
   return shops.value.filter((shop) => {
-    const matchSearch =
+    const matchesSearch =
       !search ||
       shop.shopName.toLowerCase().includes(search) ||
       shop.ownerName.toLowerCase().includes(search) ||
-      (shop.businessType || '').toLowerCase().includes(search)
+      (shop.businessType || '').toLowerCase().includes(search) ||
+      (shop.provinceOrCity || '').toLowerCase().includes(search)
 
-    const matchStatus = !statusFilter.value || shop.status === statusFilter.value
+    const matchesStatus = !statusFilter.value || shop.status === statusFilter.value
+    const matchesSubscription =
+      !subscriptionFilter.value || shop.subscriptionStatus === subscriptionFilter.value
 
-    const hasManager = !!shop.managerId
-    const matchManager =
-      !managerFilter.value ||
-      (managerFilter.value === 'assigned' && hasManager) ||
-      (managerFilter.value === 'unassigned' && !hasManager)
-
-    return matchSearch && matchStatus && matchManager
+    return matchesSearch && matchesStatus && matchesSubscription
   })
 })
 
-const fetchShops = async () => {
+const subscriptionPillClass = (status: SubscriptionStatus) => {
+  if (status === 'Active') return 'active'
+  if (status === 'Trial') return 'draft'
+  return 'inactive'
+}
+
+const loadPage = async () => {
   isLoading.value = true
+  errorMessage.value = ''
+
   try {
-    const response = await fetch(`${API_BASE}/shops`, {
-      headers: getHeaders(),
-    })
+    const [shopData, managerData] = await Promise.all([
+      apiFetch<Shop[]>('/shops'),
+      apiFetch<ManagerOption[]>('/users?role=MANAGER'),
+    ])
 
-    if (!response.ok) {
-      console.error('Failed to fetch shops:', await response.text())
-      shops.value = []
-      return
-    }
-
-    const data = await response.json()
-    shops.value = Array.isArray(data) ? data : []
+    shops.value = shopData
+    managers.value = managerData
   } catch (error) {
-    console.error('Fetch shops error:', error)
-    shops.value = []
+    errorMessage.value = error instanceof ApiError ? error.message : 'Unable to load shops.'
   } finally {
     isLoading.value = false
   }
 }
 
-const fetchManagers = async () => {
-  try {
-    const response = await fetch(`${API_BASE}/users?role=MANAGER`, {
-      headers: getHeaders(),
-    })
-
-    if (!response.ok) {
-      console.error('Failed to fetch managers:', await response.text())
-      managers.value = []
-      return
-    }
-
-    const data = await response.json()
-    managers.value = Array.isArray(data) ? data : []
-  } catch (error) {
-    console.error('Fetch managers error:', error)
-    managers.value = []
-  }
-}
-
-const refreshData = async () => {
-  await Promise.all([fetchShops(), fetchManagers()])
-}
-
-const resetShopForm = () => {
-  shopForm.value = {
-    shopName: '',
-    ownerName: '',
-    ownerEmail: '',
-    phone: '',
-    address: '',
-    businessType: '',
-    status: 'active',
-  }
-}
-
-const openCreateShopModal = () => {
-  isEditingShop.value = false
+const openCreateModal = () => {
+  isEditing.value = false
   currentShopId.value = ''
-  resetShopForm()
-  showShopModal.value = true
+  shopForm.value = emptyShopForm()
+  formError.value = ''
+  showModal.value = true
 }
 
-const openEditShopModal = (shop: Shop) => {
-  isEditingShop.value = true
+const openEditModal = (shop: Shop) => {
+  isEditing.value = true
   currentShopId.value = shop._id
+  formError.value = ''
   shopForm.value = {
-    shopName: shop.shopName || '',
-    ownerName: shop.ownerName || '',
-    ownerEmail: shop.ownerEmail || '',
-    phone: shop.phone || '',
-    address: shop.address || '',
+    shopName: shop.shopName,
     businessType: shop.businessType || '',
-    status: shop.status || 'active',
+    description: shop.description || '',
+    whatTheySell: shop.whatTheySell || '',
+    address: shop.address || '',
+    provinceOrCity: shop.provinceOrCity || '',
+    phone: shop.phone || '',
+    ownerName: shop.ownerName,
+    ownerEmail: shop.ownerEmail,
+    status: shop.status,
+    subscriptionStatus: shop.subscriptionStatus,
   }
-  showShopModal.value = true
+  showModal.value = true
 }
 
-const closeShopModal = () => {
-  showShopModal.value = false
+const closeModal = () => {
+  showModal.value = false
 }
 
 const saveShop = async () => {
-  const isEdit = isEditingShop.value
-  const url = isEdit ? `${API_BASE}/shops/${currentShopId.value}` : `${API_BASE}/shops`
-  const method = isEdit ? 'PATCH' : 'POST'
+  isSaving.value = true
+  formError.value = ''
 
   try {
-    const response = await fetch(url, {
-      method,
-      headers: getHeaders(),
-      body: JSON.stringify(shopForm.value),
-    })
-
-    if (!response.ok) {
-      alert(await response.text())
-      return
+    if (isEditing.value) {
+      await apiFetch(`/shops/${currentShopId.value}`, {
+        method: 'PATCH',
+        body: JSON.stringify(shopForm.value),
+      })
+    } else {
+      await apiFetch('/shops', {
+        method: 'POST',
+        body: JSON.stringify(shopForm.value),
+      })
     }
 
-    closeShopModal()
-    await refreshData()
+    closeModal()
+    await loadPage()
   } catch (error) {
-    console.error('Save shop error:', error)
+    formError.value = error instanceof ApiError ? error.message : 'Unable to save shop.'
+  } finally {
+    isSaving.value = false
   }
 }
 
-const openAssignManagerModal = (shop: Shop) => {
+const openAssignModal = (shop: Shop) => {
   selectedShop.value = shop
-  assignManagerForm.value.managerId =
-    typeof shop.managerId === 'object' && shop.managerId?._id ? shop.managerId._id : ''
-  showAssignManagerModal.value = true
+  assignManagerId.value = shop.managerId?.id || shop.managerId?._id || ''
+  assignError.value = ''
+  showAssignModal.value = true
 }
 
-const closeAssignManagerModal = () => {
-  showAssignManagerModal.value = false
+const closeAssignModal = () => {
+  showAssignModal.value = false
+  selectedShop.value = null
 }
 
 const assignManager = async () => {
-  if (!selectedShop.value) return
+  if (!selectedShop.value || !assignManagerId.value) {
+    assignError.value = 'Please select a shop owner first.'
+    return
+  }
+
+  isAssigning.value = true
+  assignError.value = ''
 
   try {
-    const response = await fetch(`${API_BASE}/shops/${selectedShop.value._id}/assign-manager`, {
+    await apiFetch(`/shops/${selectedShop.value._id}/assign-manager`, {
       method: 'PATCH',
-      headers: getHeaders(),
-      body: JSON.stringify(assignManagerForm.value),
+      body: JSON.stringify({ managerId: assignManagerId.value }),
     })
 
-    if (!response.ok) {
-      alert(await response.text())
-      return
-    }
-
-    closeAssignManagerModal()
-    await refreshData()
+    closeAssignModal()
+    await loadPage()
   } catch (error) {
-    console.error('Assign manager error:', error)
+    assignError.value = error instanceof ApiError ? error.message : 'Unable to assign shop owner.'
+  } finally {
+    isAssigning.value = false
   }
 }
 
-const openCreateManagerModal = (shop: Shop) => {
-  selectedShop.value = shop
-  managerForm.value = {
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-  }
-  showCreateManagerModal.value = true
-}
-
-const closeCreateManagerModal = () => {
-  showCreateManagerModal.value = false
-}
-
-const createManager = async () => {
-  if (!selectedShop.value) return
-
-  try {
-    const response = await fetch(`${API_BASE}/shops/${selectedShop.value._id}/manager`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(managerForm.value),
-    })
-
-    if (!response.ok) {
-      alert(await response.text())
-      return
-    }
-
-    closeCreateManagerModal()
-    await refreshData()
-  } catch (error) {
-    console.error('Create manager error:', error)
-  }
-}
-
-onMounted(refreshData)
+onMounted(loadPage)
 </script>
+
+<style scoped>
+.shops-page {
+  padding: 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  gap: 1.25rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.shops-page :deep(.page-header h2) {
+  font-size: 1.75rem;
+}
+
+.shops-page :deep(.erp-card) {
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+}
+
+.error-banner,
+.form-error {
+  color: #991b1b;
+}
+
+.error-banner {
+  background: #fff5f5;
+  border-color: #fecaca;
+}
+
+.form-error {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.assign-modal {
+  width: min(560px, 100%);
+}
+
+@media (max-width: 768px) {
+  .shops-page {
+    padding: 1.25rem;
+  }
+}
+</style>

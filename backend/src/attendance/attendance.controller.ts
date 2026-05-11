@@ -19,7 +19,7 @@ import { Role } from '../common/enums/role.enum';
 
 @Controller('attendance')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE, Role.OWNER, Role.STAFF)
+@Roles(Role.MANAGER, Role.EMPLOYEE, Role.OWNER, Role.STAFF)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
@@ -54,7 +54,7 @@ export class AttendanceController {
   }
 
   @Post('shop-settings')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
+  @Roles(Role.MANAGER, Role.OWNER)
   updateShopSettings(@Body() dto: any) {
     return this.attendanceService.updateShopSettings(dto);
   }

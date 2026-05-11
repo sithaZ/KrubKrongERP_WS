@@ -35,7 +35,8 @@ export class AuthGuard implements CanActivate {
         sub: userId,
         userId,
         role: normalizeRole(payload.role) || payload.role,
-        companyId: payload.companyId || null,
+        companyId: payload.companyId || payload.shopId || null,
+        shopId: payload.shopId || payload.companyId || null,
       };
     } catch {
       throw new UnauthorizedException('Invalid or expired token');

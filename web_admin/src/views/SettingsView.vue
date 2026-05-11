@@ -2,40 +2,62 @@
   <section class="content-area">
     <div class="page-header">
       <h2>System Settings</h2>
-      <p>Configure taxes, store details, and technical preferences.</p>
+      <p>Keep platform-wide rules and admin policies in one place.</p>
     </div>
-    
-    <div class="placeholder-box">
-      <div class="icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+
+    <div class="cards-grid">
+      <div class="settings-card">
+        <h3>Subscription Policy</h3>
+        <p>Annual plan price remains $50 per shop and is managed from the Subscriptions page.</p>
       </div>
-      <h3>Settings Module Coming Soon</h3>
-      <p>This is where your configuration forms will be displayed.</p>
+
+      <div class="settings-card">
+        <h3>Role Boundaries</h3>
+        <p>ADMIN manages shops and shop owners. Shop owners continue to handle employees, attendance, and payroll in Flutter/mobile_pos.</p>
+      </div>
+
+      <div class="settings-card">
+        <h3>Compatibility</h3>
+        <p>The UI uses the label Shop even when the backend still stores the relation as companyId.</p>
+      </div>
     </div>
   </section>
 </template>
 
-<script setup lang="ts">
-
-</script>
-
 <style scoped>
-.content-area { padding: 2.5rem; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.3s ease; }
+.content-area {
+  padding: 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease;
+}
+
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 .page-header { margin-bottom: 2rem; }
 .page-header h2 { font-size: 1.75rem; color: #111827; margin: 0 0 0.5rem 0; }
 .page-header p { color: #64748b; margin: 0; }
 
-.placeholder-box {
-  background: white; border: 1px dashed #cbd5e1; border-radius: 12px;
-  padding: 4rem; text-align: center; color: #64748b;
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
 }
-.placeholder-box .icon { 
-  margin-bottom: 1rem; 
-  color: #94a3b8;
-  display: flex;
-  justify-content: center;
+
+.settings-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.placeholder-box h3 { color: #111827; margin: 0 0 0.5rem 0; }
+
+.settings-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -5px rgba(0,0,0,0.08);
+}
+
+.settings-card h3 { margin: 0 0 0.75rem 0; color: #111827; }
+.settings-card p { margin: 0; color: #64748b; line-height: 1.6; }
 </style>

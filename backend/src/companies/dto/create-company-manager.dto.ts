@@ -18,7 +18,17 @@ export class CreateCompanyManagerDto {
   @IsString()
   phone?: string;
 
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @IsOptional()
   @IsString()
   @MinLength(6)
-  password: string;
+  temporaryPassword?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  password?: string;
 }

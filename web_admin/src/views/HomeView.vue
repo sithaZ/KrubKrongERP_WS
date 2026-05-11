@@ -50,16 +50,6 @@
           Dashboard
         </router-link>
 
-        <router-link to="/staff" active-class="active">
-          <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          Employees
-        </router-link>
-
         <router-link to="/shops" active-class="active">
           <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9 12 4l9 5"/>
@@ -73,24 +63,24 @@
           Shops
         </router-link>
 
-        <router-link to="/attendance" active-class="active">
+        <router-link to="/managers" active-class="active">
           <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 2v4"/>
-            <path d="M16 2v4"/>
-            <rect width="18" height="18" x="3" y="4" rx="2"/>
-            <path d="M3 10h18"/>
+            <path d="M16 11c1.66 0 3-1.79 3-4s-1.34-4-3-4-3 1.79-3 4 1.34 4 3 4z"/>
+            <path d="M8 11c1.66 0 3-1.79 3-4S9.66 3 8 3 5 4.79 5 7s1.34 4 3 4z"/>
+            <path d="M8 13c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            <path d="M16 13c-.32 0-.69.02-1.08.05 1.19.87 2.08 2 2.08 3.45V19h7v-2c0-2.66-5.33-4-8-4z"/>
           </svg>
-          Attendance
+          Shop Owners
         </router-link>
-        
-        <router-link to="/payroll" active-class="active">
-        <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="5" width="20" height="14" rx="2"/>
-        <path d="M2 10h20"/>
-        </svg>
-         Payroll
+
+        <router-link to="/subscriptions" active-class="active">
+          <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <path d="M2 10h20"/>
+          </svg>
+          Subscriptions
         </router-link>
-      
+
         <router-link to="/catalog" active-class="active">
           <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m7.5 4.27 9 5.15"/>
@@ -110,23 +100,24 @@
         </router-link>
       </div>
     </nav>
-  <main class="main-content">
-  <router-view v-slot="{ Component }">
-    <transition name="page-slide" mode="out-in">
-      <component :is="Component" />
-    </transition>
-  </router-view>
-  </main>
+
+    <main class="main-content">
+      <router-view v-slot="{ Component }">
+        <transition name="page-slide" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-const router = useRouter();
-const displayName = ref('Admin User');
-const displayRole = ref('Administrator');
+const router = useRouter()
+const displayName = ref('Admin User')
+const displayRole = ref('Administrator')
 
 const currentDate = ref(
   new Intl.DateTimeFormat('en-US', {
@@ -135,28 +126,28 @@ const currentDate = ref(
     month: 'long',
     day: 'numeric',
   }).format(new Date()),
-);
+)
 
 onMounted(() => {
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
+  const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role')
 
   if (!token || role !== 'ADMIN') {
-    router.push('/login');
-    return;
+    router.push('/login')
+    return
   }
 
-  displayName.value = localStorage.getItem('username') || 'Admin User';
-});
+  displayName.value = localStorage.getItem('username') || 'Admin User'
+})
 
 const handleLogout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('role');
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('user_role');
-  localStorage.removeItem('username');
-  router.push('/login');
-};
+  localStorage.removeItem('token')
+  localStorage.removeItem('role')
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('user_role')
+  localStorage.removeItem('username')
+  router.push('/login')
+}
 </script>
 
 <style scoped>
@@ -177,7 +168,6 @@ const handleLogout = () => {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-
 .page-slide-enter-active,
 .page-slide-leave-active {
   transition: opacity 0.22s ease, transform 0.22s ease;
@@ -192,6 +182,7 @@ const handleLogout = () => {
   opacity: 0;
   transform: translateY(-6px);
 }
+
 .top-header {
   background-color: var(--primary);
   color: white;
@@ -354,7 +345,8 @@ const handleLogout = () => {
   overflow-y: auto;
 }
 
-.main-content :deep(.page-shell) {
+.main-content :deep(.page-shell),
+.main-content :deep(.content-area) {
   width: min(1440px, 100%);
 }
 

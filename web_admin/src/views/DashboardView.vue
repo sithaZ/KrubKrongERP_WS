@@ -1,11 +1,17 @@
 <template>
   <section class="content-area">
     <div class="welcome-card">
-      <div class="welcome-text">
-        <h2>Business Overview</h2>
-        <p>Track your shop structure before drilling into HR operations.</p>
-      </div>
-      <button class="action-btn" type="button" @click="goToShops">Manage Shops</button>
+        <div class="welcome-text">
+          <h2>SaaS Overview</h2>
+          <p>Track shops, shop owner coverage, subscription health, and yearly platform revenue.</p>
+        </div>
+      <button class="action-btn" type="button" @click="goToSubscriptions">
+        Manage Subscriptions
+      </button>
+    </div>
+
+    <div v-if="errorMessage" class="error-banner">
+      {{ errorMessage }}
     </div>
 
     <div class="stats-grid">
@@ -24,89 +30,108 @@
           <div class="icon-box ocean"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2" ry="2"/><rect width="6" height="6" x="9" y="9" rx="1" ry="1"/></svg></div>
         </div>
         <p class="stat-number">{{ stats.activeShops }}</p>
-        <p class="stat-trend neutral">Currently operating shops</p>
+        <p class="stat-trend neutral">Currently enabled shops</p>
       </div>
 
       <div class="stat-card">
         <div class="stat-header">
-          <h3>Total Managers</h3>
+          <h3>Total Shop Owners</h3>
           <div class="icon-box emerald"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         </div>
         <p class="stat-number">{{ stats.totalManagers }}</p>
-        <p class="stat-trend neutral">Managers assigned to shops</p>
+        <p class="stat-trend neutral">Shop owner accounts assigned across shops</p>
       </div>
 
       <div class="stat-card">
         <div class="stat-header">
-          <h3>Total Employees</h3>
+          <h3>Active Subscriptions</h3>
           <div class="icon-box rose"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
         </div>
-        <p class="stat-number">{{ stats.totalEmployees }}</p>
-        <p class="stat-trend success">Employees linked to business structure</p>
+        <p class="stat-number">{{ stats.activeSubscriptions }}</p>
+        <p class="stat-trend success">Shops on an active yearly plan</p>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <h3>Expired / Suspended</h3>
+          <div class="icon-box amber"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+        </div>
+        <p class="stat-number">{{ stats.suspendedOrExpiredShops }}</p>
+        <p class="stat-trend neutral">Needs renewal or manual follow-up</p>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <h3>Estimated Yearly Revenue</h3>
+          <div class="icon-box teal"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        </div>
+        <p class="stat-number">${{ Number(stats.estimatedYearlyRevenue).toFixed(0) }}</p>
+        <p class="stat-trend success">Projected subscription revenue</p>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ApiError, apiFetch } from '../lib/adminApi'
 
-const API_BASE = 'http://localhost:3000/api'
 const router = useRouter()
+const errorMessage = ref('')
 
 const stats = reactive({
   totalShops: 0,
   activeShops: 0,
   totalManagers: 0,
-  totalEmployees: 0,
+  activeSubscriptions: 0,
+  suspendedOrExpiredShops: 0,
+  estimatedYearlyRevenue: 0,
 })
 
-const getHeaders = () => {
-  const token = localStorage.getItem('token')
-  return {
-    Authorization: token ? `Bearer ${token}` : '',
-  }
-}
-
 const fetchStats = async () => {
+  errorMessage.value = ''
+
   try {
-    const response = await fetch(`${API_BASE}/dashboard/stats`, {
-      headers: getHeaders(),
-    })
+    const data = await apiFetch<{
+      totalShops?: number
+      activeShops?: number
+      totalManagers?: number
+      activeSubscriptions?: number
+      suspendedOrExpiredShops?: number
+      expiredShops?: number
+      estimatedYearlyRevenue?: number
+    }>('/dashboard/stats')
 
-    if (!response.ok) {
-      console.error('Failed to load dashboard stats:', await response.text())
-      return
-    }
-
-    const data = await response.json()
     stats.totalShops = Number(data.totalShops || 0)
     stats.activeShops = Number(data.activeShops || 0)
     stats.totalManagers = Number(data.totalManagers || 0)
-    stats.totalEmployees = Number(data.totalEmployees || 0)
+    stats.activeSubscriptions = Number(data.activeSubscriptions || 0)
+    stats.suspendedOrExpiredShops = Number(
+      data.suspendedOrExpiredShops || data.expiredShops || 0,
+    )
+    stats.estimatedYearlyRevenue = Number(data.estimatedYearlyRevenue || 0)
   } catch (error) {
-    console.error('Dashboard stats error:', error)
+    errorMessage.value =
+      error instanceof ApiError ? error.message : 'Unable to load dashboard stats.'
   }
 }
 
-const goToShops = () => {
-  router.push('/shops')
+const goToSubscriptions = () => {
+  router.push('/subscriptions')
 }
 
 onMounted(fetchStats)
-
 </script>
 
 <style scoped>
-
 .content-area {
   padding: 2.5rem;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
-  animation: fadeIn 0.3s ease; /* Adds a nice fade-in when you click the tab! */
+  animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
@@ -115,30 +140,55 @@ onMounted(fetchStats)
 }
 
 .welcome-card {
-  background: linear-gradient(135deg, #283375 0%, #4B6BB3 100%); 
+  background: linear-gradient(135deg, #283375 0%, #4B6BB3 100%);
   color: white;
   padding: 2.5rem;
   border-radius: 16px;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   box-shadow: 0 10px 25px -5px rgba(40, 51, 117, 0.4);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .welcome-text h2 { margin: 0 0 0.5rem 0; font-size: 1.75rem; font-weight: 700; }
 .welcome-text p { margin: 0; color: #E0E7FF; font-size: 1rem; }
+
 .action-btn {
-  background-color: #FFFFFF; color: #283375; border: none; padding: 0.875rem 1.75rem;
-  border-radius: 8px; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+  background-color: #FFFFFF;
+  color: #283375;
+  border: none;
+  padding: 0.875rem 1.75rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
+
 .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
 
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
-.stat-card {
-  background: white; padding: 1.75rem; border-radius: 16px; border: 1px solid #E5E7EB;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); transition: transform 0.2s ease, box-shadow 0.2s ease;
+.error-banner {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  font-weight: 600;
 }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+
+.stat-card {
+  background: white;
+  padding: 1.75rem;
+  border-radius: 16px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
 .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.08); }
 .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
 .stat-header h3 { margin: 0; font-size: 0.95rem; color: #64748b; font-weight: 600; }
@@ -148,9 +198,19 @@ onMounted(fetchStats)
 .icon-box.ocean { background: #EDF1F8; color: #4B6BB3; }
 .icon-box.emerald { background: #ECFDF5; color: #10B981; }
 .icon-box.rose { background: #FFF1F2; color: #E11D48; }
+.icon-box.amber { background: #FEF3C7; color: #B45309; }
+.icon-box.teal { background: #CCFBF1; color: #0F766E; }
 
 .stat-number { font-size: 2.5rem; font-weight: 800; color: #111827; margin: 0 0 0.5rem 0; line-height: 1; letter-spacing: -1px; }
 .stat-trend { margin: 0; font-size: 0.875rem; font-weight: 500; }
 .stat-trend.neutral { color: #9CA3AF; }
 .stat-trend.success { color: #059669; }
+
+@media (max-width: 900px) {
+  .welcome-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
 </style>
