@@ -63,9 +63,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
                   Center(
-                    child: AppLogo(size: 80, color: colorScheme.primary),
+                    child: AppLogo(size: 120, color: colorScheme.primary),
                   ),
                   const SizedBox(height: 32),
                   Text(

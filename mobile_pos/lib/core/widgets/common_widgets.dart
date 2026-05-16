@@ -207,13 +207,25 @@ class AppLogo extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: color ?? Theme.of(context).colorScheme.primary,
+        color: Colors.transparent, // Changed to transparent to let the image shine
         borderRadius: BorderRadius.circular(size * 0.25),
       ),
-      child: Icon(
-        Icons.point_of_sale,
-        size: size * 0.5,
-        color: Colors.white,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.25),
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            // Fallback to icon if image is missing
+            return Icon(
+              Icons.point_of_sale,
+              size: size * 0.5,
+              color: color ?? Theme.of(context).colorScheme.primary,
+            );
+          },
+        ),
       ),
     );
   }
