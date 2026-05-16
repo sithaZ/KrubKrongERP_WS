@@ -45,6 +45,9 @@ export class AttendanceService {
 
     if (normalizedRole === Role.MANAGER) {
       if (!currentUser.companyId) {
+        // Fallback: If companyId is missing in token, Admin might be using a Manager-lite token
+        // Or the account was created without it. For Admin, we should allow bypass.
+        if (currentUser.role?.toUpperCase() === 'ADMIN') return {};
         throw new ForbiddenException('Manager account is missing company access');
       }
 

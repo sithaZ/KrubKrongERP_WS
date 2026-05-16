@@ -33,9 +33,9 @@ class User extends Equatable {
 
   bool get hasSupportedRole => role != null;
 
-  bool get isAdmin => false;
+  bool get isAdmin => rawRole.toUpperCase() == 'ADMIN';
 
-  bool get isOwner => isManager;
+  bool get isOwner => isManager || isAdmin;
 
   bool get isStaff => isEmployee;
 

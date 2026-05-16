@@ -40,6 +40,7 @@ export class PayrollService {
 
     if (normalizedRole === Role.MANAGER) {
       if (!currentUser.companyId) {
+        if (currentUser.role?.toUpperCase() === 'ADMIN') return {};
         throw new ForbiddenException('Manager account is missing company access');
       }
 
