@@ -9,6 +9,9 @@ import '../../features/auth/presentation/pages/login_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/staff/presentation/pages/add_staff_screen.dart';
 
+import '../../features/staff/presentation/pages/staff_screen.dart';
+import '../../features/attendance/presentation/pages/attendance_screen.dart';
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: AppRoutePaths.login,
@@ -44,7 +47,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final location = state.uri.path;
       final isManagerRoute =
           location.startsWith(AppRoutePaths.managerShell) ||
-          location.startsWith(AppRoutePaths.addStaff);
+          location.startsWith(AppRoutePaths.addStaff) ||
+          location.startsWith(AppRoutePaths.staffList) ||
+          location.startsWith(AppRoutePaths.attendance) ||
+          location.startsWith(AppRoutePaths.payroll) ||
+          location.startsWith(AppRoutePaths.settings);
+          
       final isEmployeeRoute =
           location.startsWith(AppRoutePaths.employeeShell);
 
@@ -74,6 +82,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutePaths.addStaff,
         builder: (context, state) => const AddStaffScreen(),
+      ),
+      GoRoute(
+        path: AppRoutePaths.staffList,
+        builder: (context, state) => const StaffScreen(),
+      ),
+      GoRoute(
+        path: AppRoutePaths.attendance,
+        builder: (context, state) => const AttendanceScreen(),
       ),
     ],
   );
