@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
-import '../../features/attendance/presentation/pages/attendance_screen.dart';
-import '../../features/staff/presentation/pages/staff_screen.dart';
+import '../../features/dashboard/presentation/pages/dashboard_screen.dart';
+import '../../features/pos/presentation/pages/pos_screen.dart';
+import '../../features/order/presentation/pages/order_screen.dart';
 import '../router/route_paths.dart';
 
 class ManagerShellScreen extends ConsumerStatefulWidget {
@@ -21,34 +22,17 @@ class _ManagerShellScreenState extends ConsumerState<ManagerShellScreen> {
     final ref = this.ref;
     final user = ref.watch(currentUserProvider);
     final pages = [
-      _ManagerHomeView(
+      const DashboardScreen(),
+      const PosScreen(),
+      const OrderScreen(),
+      _ManageHubView(
         userName: user?.displayName,
         userRole: user?.roleLabel,
         companyId: user?.companyId,
         email: user?.email,
       ),
-      const StaffScreen(showAppBar: false),
-      const AttendanceScreen(showAppBar: false),
     ];
-    final titles = ['KrubKrong ERP', 'Employees', 'Attendance Overview'];
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(titles[_selectedIndex]),
-        actions: [
-          if (_selectedIndex == 1)
-            IconButton(
-              onPressed: () => context.push(AppRoutePaths.addStaff),
-              icon: const Icon(Icons.person_add_outlined),
-              tooltip: 'Add Staff',
-            ),
-          IconButton(
-            onPressed: () => ref.read(authProvider.notifier).logout(),
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
       body: IndexedStack(
         index: _selectedIndex,
         children: pages,
@@ -62,19 +46,24 @@ class _ManagerShellScreenState extends ConsumerState<ManagerShellScreen> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Dashboard',
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Employees',
+            icon: Icon(Icons.point_of_sale_outlined),
+            selectedIcon: Icon(Icons.point_of_sale),
+            label: 'POS',
           ),
           NavigationDestination(
-            icon: Icon(Icons.fact_check_outlined),
-            selectedIcon: Icon(Icons.fact_check),
-            label: 'Attendance',
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long),
+            label: 'Orders',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.grid_view_outlined),
+            selectedIcon: Icon(Icons.grid_view),
+            label: 'Manage',
           ),
         ],
       ),
@@ -82,8 +71,8 @@ class _ManagerShellScreenState extends ConsumerState<ManagerShellScreen> {
   }
 }
 
-class _ManagerHomeView extends StatelessWidget {
-  const _ManagerHomeView({
+class _ManageHubView extends StatelessWidget {
+  const _ManageHubView({
     required this.userName,
     required this.userRole,
     required this.companyId,
@@ -100,8 +89,12 @@ class _ManagerHomeView extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return ListView(
-      padding: const EdgeInsets.all(24),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Management Hub'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(24),
       children: [
         Container(
           padding: const EdgeInsets.all(24),
@@ -169,34 +162,39 @@ class _ManagerHomeView extends StatelessWidget {
           childAspectRatio: 1.08,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          children: const [
+          children: [
             _ActionCard(
               icon: Icons.people_outline,
               title: 'Employees',
               description:
                   'View your workforce directory and manage active team members.',
+              onTap: () => context.push(AppRoutePaths.staffList),
             ),
             _ActionCard(
               icon: Icons.fact_check_outlined,
               title: 'Attendance',
               description:
                   'Review attendance activity and keep daily operations on track.',
+              onTap: () => context.push(AppRoutePaths.attendance),
             ),
             _ActionCard(
               icon: Icons.payments_outlined,
               title: 'Payroll',
               description:
                   'Prepare salary workflows and monitor compensation activities.',
+              onTap: () => context.push(AppRoutePaths.payroll),
             ),
             _ActionCard(
               icon: Icons.storefront_outlined,
               title: 'Shop Settings',
               description:
                   'Maintain key business setup details for your branch and team.',
+              onTap: () => context.push(AppRoutePaths.settings),
             ),
           ],
         ),
       ],
+      ),
     );
   }
 }
@@ -262,31 +260,36 @@ class _ActionCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.description,
+    required this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String description;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: colorScheme.outlineVariant),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -316,6 +319,7 @@ class _ActionCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
