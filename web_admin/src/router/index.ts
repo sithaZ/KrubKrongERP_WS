@@ -1,15 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import HomeView from '../views/HomeView.vue'
-
-
 import DashboardView from '../views/DashboardView.vue'
-import UsersView from '../views/UsersView.vue'
 import CatalogView from '../views/CatalogView.vue'
 import SettingsView from '../views/SettingsView.vue'
-import AttendanceView from '../views/AttendanceView.vue';
-import PayrollView from '../views/PayrollView.vue';
-import ShopsView from '../views/ShopsView.vue';
+import SubscriptionsView from '../views/SubscriptionsView.vue'
+import ShopsView from '../views/ShopsView.vue'
+import ManagersView from '../views/ManagersView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,14 +28,14 @@ const router = createRouter({
           redirect: '/dashboard'
         },
         {
-        path: 'attendance',
-        name: 'attendance',
-        component: AttendanceView,
-        },
-        {
           path: 'shops',
           name: 'shops',
           component: ShopsView
+        },
+        {
+          path: 'managers',
+          name: 'managers',
+          component: ManagersView
         },
         {
          
@@ -46,16 +43,10 @@ const router = createRouter({
           name: 'dashboard',
           component: DashboardView
         },
-          {
-      path: 'payroll',
-      name: 'payroll',
-      component: PayrollView,
-    },
         {
-          
-          path: 'staff',
-          name: 'staff',
-          component: UsersView
+          path: 'subscriptions',
+          name: 'subscriptions',
+          component: SubscriptionsView,
         },
         {
           
@@ -68,6 +59,10 @@ const router = createRouter({
           path: 'settings',
           name: 'settings',
           component: SettingsView
+        },
+        {
+          path: ':pathMatch(.*)*',
+          redirect: '/dashboard'
         }
       ]
     }

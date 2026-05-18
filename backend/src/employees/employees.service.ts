@@ -20,6 +20,7 @@ type RequestUser = {
   userId: string;
   role?: string;
   companyId?: string | null;
+  shopId?: string | null;
 };
 
 @Injectable()
@@ -27,6 +28,8 @@ export class EmployeesService {
   private static readonly EMPLOYEE_CODE_PREFIX = 'EMP';
   private static readonly EMPLOYEE_CODE_PAD_LENGTH = 3;
   private static readonly MAX_CREATE_RETRIES = 5;
+  private readonly safeUserPopulate =
+    'name email username phone role isActive companyId createdAt updatedAt';
 
   constructor(
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
@@ -41,39 +44,37 @@ export class EmployeesService {
     return value ? new Types.ObjectId(value) : undefined;
   }
 
-  private resolveCompanyId(companyId: string | undefined, currentUser: RequestUser) {
-    const normalizedRole = this.getNormalizedRole(currentUser);
+  private getScopedShopId(currentUser: RequestUser) {
+    return currentUser.shopId || currentUser.companyId || null;
+  }
 
-    if (normalizedRole === Role.MANAGER) {
-      // Allow creation even if companyId is missing for the manager, 
-      // but use it if it exists.
-      return currentUser.companyId ? new Types.ObjectId(currentUser.companyId) : undefined;
+  private getManagerShopObjectId(currentUser: RequestUser) {
+    const shopId = this.getScopedShopId(currentUser);
+
+    if (!shopId) {
+      throw new ForbiddenException(
+        'Manager must be assigned to a shop before managing employees',
+      );
     }
 
-    if (normalizedRole === Role.ADMIN && !companyId) {
-      throw new BadRequestException('shopId/companyId is required for ADMIN employee creation');
-    }
-
-    return this.toObjectId(companyId);
+    return new Types.ObjectId(shopId);
   }
 
   private buildAccessFilter(currentUser: RequestUser) {
     const normalizedRole = this.getNormalizedRole(currentUser);
 
-    if (normalizedRole === Role.ADMIN) {
-      return {};
-    }
-
     if (normalizedRole === Role.MANAGER) {
-      if (currentUser.companyId) {
+      const shopId = this.getScopedShopId(currentUser);
+
+      if (shopId) {
         return {
-          companyId: new Types.ObjectId(currentUser.companyId),
+          companyId: new Types.ObjectId(shopId),
         };
       }
-      
-      // If no companyId, manager can only see employees they created 
-      // or those explicitly assigned to them via userId
-      return {}; 
+
+      return {
+        _id: { $exists: false },
+      };
     }
 
     return {
@@ -84,22 +85,19 @@ export class EmployeesService {
   private assertEmployeeAccess(employee: Employee, currentUser: RequestUser) {
     const normalizedRole = this.getNormalizedRole(currentUser);
 
-    if (normalizedRole === Role.ADMIN) {
-      return;
-    }
-
     if (normalizedRole === Role.MANAGER) {
-      // If manager has a company, enforce matching companyId
-      if (currentUser.companyId) {
-        if (employee.companyId?.toString() !== currentUser.companyId) {
-          throw new ForbiddenException('You cannot access another company\'s employee data');
-        }
-        return;
+      const shopId = this.getScopedShopId(currentUser);
+
+      if (!shopId) {
+        throw new ForbiddenException(
+          'Manager must be assigned to a shop before accessing employees',
+        );
       }
-      
-      // If manager has no company, they can only access employees with no company
-      if (employee.companyId) {
-        throw new ForbiddenException('You do not have access to this company\'s data');
+
+      if (employee.companyId?.toString() !== shopId) {
+        throw new ForbiddenException(
+          'You cannot access another shop employee record',
+        );
       }
 
       return;
@@ -198,11 +196,23 @@ export class EmployeesService {
   }
 
   async create(createEmployeeDto: CreateEmployeeDto, currentUser: RequestUser) {
+    const normalizedRole = this.getNormalizedRole(currentUser);
+
+    if (normalizedRole !== Role.MANAGER) {
+      throw new ForbiddenException('Only managers can create employees');
+    }
+
+    const requestedShopId = createEmployeeDto.shopId || createEmployeeDto.companyId;
+    const currentShopId = this.getScopedShopId(currentUser);
+
+    if (requestedShopId && currentShopId && requestedShopId !== currentShopId) {
+      throw new ForbiddenException(
+        'Managers can only create employees inside their own shop',
+      );
+    }
+
     const normalizedEmail = this.normalizeEmail(createEmployeeDto.email);
-    const companyId = this.resolveCompanyId(
-      createEmployeeDto.companyId,
-      currentUser,
-    );
+    const companyId = this.getManagerShopObjectId(currentUser);
 
     const existingEmployeeEmail = await this.employeeModel.findOne({
       email: normalizedEmail,
@@ -236,7 +246,7 @@ export class EmployeesService {
       try {
         const staffName = createEmployeeDto.fullName;
 
-        createdUser = await this.usersService.create({
+        createdUser = await this.usersService.createEmployeeAccount({
           username,
           name: staffName,
           email: normalizedEmail,
@@ -252,6 +262,7 @@ export class EmployeesService {
           employeeCode,
           email: normalizedEmail,
           companyId,
+          shopId: companyId.toString(),
           userId: createdUser._id,
           hireDate: createEmployeeDto.hireDate
             ? new Date(createEmployeeDto.hireDate)
@@ -260,7 +271,10 @@ export class EmployeesService {
 
         const employee = new this.employeeModel(payload);
         const savedEmployee = await employee.save();
-        const populatedEmployee = await savedEmployee.populate('userId');
+        const populatedEmployee = await savedEmployee.populate(
+          'userId',
+          this.safeUserPopulate,
+        );
 
         return {
           employee: populatedEmployee.toObject(),
@@ -275,7 +289,7 @@ export class EmployeesService {
 
         if (createdUser) {
           await this.usersService
-            .remove(createdUser._id.toString())
+            .removeEmployeeAccount(createdUser._id.toString())
             .catch((e) => {
               console.error(
                 'Failed to cleanup user after employee creation failure:',
@@ -305,18 +319,20 @@ export class EmployeesService {
     return this.employeeModel
       .find(this.buildAccessFilter(currentUser))
       .sort({ createdAt: -1 })
-      .populate('userId');
+      .populate('userId', this.safeUserPopulate);
   }
 
   async findActive(currentUser: RequestUser) {
     return this.employeeModel
       .find({ ...this.buildAccessFilter(currentUser), isActive: true })
       .sort({ createdAt: -1 })
-      .populate('userId');
+      .populate('userId', this.safeUserPopulate);
   }
 
   async findOne(id: string, currentUser: RequestUser) {
-    const employee = await this.employeeModel.findById(id).populate('userId');
+    const employee = await this.employeeModel
+      .findById(id)
+      .populate('userId', this.safeUserPopulate);
 
     if (!employee) {
       throw new NotFoundException('Employee not found');
@@ -328,6 +344,16 @@ export class EmployeesService {
   }
 
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto, currentUser: RequestUser) {
+    const normalizedRole = this.getNormalizedRole(currentUser);
+
+    if (normalizedRole === Role.ADMIN) {
+      throw new ForbiddenException('ADMIN cannot manage employee records');
+    }
+
+    if (normalizedRole !== Role.MANAGER) {
+      throw new ForbiddenException('Only managers can update employee records');
+    }
+
     if (updateEmployeeDto.employeeCode) {
       const existing = await this.employeeModel.findOne({
         employeeCode: updateEmployeeDto.employeeCode,
@@ -361,16 +387,19 @@ export class EmployeesService {
 
     this.assertEmployeeAccess(currentEmployee, currentUser);
 
+    const requestedShopId = updateEmployeeDto.shopId || updateEmployeeDto.companyId;
+    const currentShopId = this.getScopedShopId(currentUser);
+
+    if (requestedShopId && currentShopId && requestedShopId !== currentShopId) {
+      throw new ForbiddenException(
+        'Managers cannot move employees to another shop',
+      );
+    }
+
     const updatePayload: any = { ...updateEmployeeDto };
-    const companyId = this.resolveCompanyId(updateEmployeeDto.companyId, currentUser);
-
-    if (updateEmployeeDto.userId) {
-      updatePayload.userId = new Types.ObjectId(updateEmployeeDto.userId);
-    }
-
-    if (companyId) {
-      updatePayload.companyId = companyId;
-    }
+    delete updatePayload.userId;
+    delete updatePayload.shopId;
+    updatePayload.companyId = this.getManagerShopObjectId(currentUser);
 
     if (updateEmployeeDto.hireDate) {
       updatePayload.hireDate = new Date(updateEmployeeDto.hireDate);
@@ -398,12 +427,10 @@ export class EmployeesService {
         userUpdatePayload.isActive = updateEmployeeDto.isActive;
       }
 
-      if (companyId) {
-        userUpdatePayload.companyId = companyId;
-      }
+      userUpdatePayload.companyId = updatePayload.companyId;
 
       if (Object.keys(userUpdatePayload).length > 0) {
-        await this.usersService.update(
+        await this.usersService.updateEmployeeAccount(
           currentEmployee.userId.toString(),
           userUpdatePayload,
         );
@@ -412,7 +439,7 @@ export class EmployeesService {
 
     const employee = await this.employeeModel
       .findByIdAndUpdate(id, updatePayload, { new: true })
-      .populate('userId');
+      .populate('userId', this.safeUserPopulate);
 
     if (!employee) {
       throw new NotFoundException('Employee not found');
@@ -422,6 +449,16 @@ export class EmployeesService {
   }
 
   async deactivate(id: string, currentUser: RequestUser) {
+    const normalizedRole = this.getNormalizedRole(currentUser);
+
+    if (normalizedRole === Role.ADMIN) {
+      throw new ForbiddenException('ADMIN cannot manage employee records');
+    }
+
+    if (normalizedRole !== Role.MANAGER) {
+      throw new ForbiddenException('Only managers can deactivate employees');
+    }
+
     const currentEmployee = await this.employeeModel.findById(id);
 
     if (!currentEmployee) {
@@ -431,14 +468,14 @@ export class EmployeesService {
     this.assertEmployeeAccess(currentEmployee, currentUser);
 
     if (currentEmployee.userId) {
-      await this.usersService.update(currentEmployee.userId.toString(), {
+      await this.usersService.updateEmployeeAccount(currentEmployee.userId.toString(), {
         isActive: false,
       });
     }
 
     const employee = await this.employeeModel
       .findByIdAndUpdate(id, { isActive: false }, { new: true })
-      .populate('userId');
+      .populate('userId', this.safeUserPopulate);
 
     if (!employee) {
       throw new NotFoundException('Employee not found');

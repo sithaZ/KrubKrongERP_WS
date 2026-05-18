@@ -39,10 +39,6 @@ export class AttendanceService {
   private buildAttendanceFilter(currentUser: RequestUser) {
     const normalizedRole = this.getNormalizedRole(currentUser);
 
-    if (normalizedRole === Role.ADMIN) {
-      return {};
-    }
-
     if (normalizedRole === Role.MANAGER) {
       if (!currentUser.companyId) {
         // Fallback: If companyId is missing in token, Admin might be using a Manager-lite token
@@ -87,10 +83,6 @@ export class AttendanceService {
       throw new NotFoundException(
         'Active employee record not found. Please ensure you are registered as an employee.',
       );
-    }
-
-    if (normalizedRole === Role.ADMIN) {
-      return employee;
     }
 
     if (normalizedRole === Role.MANAGER) {

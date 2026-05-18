@@ -34,10 +34,6 @@ export class PayrollService {
   private buildPayrollFilter(currentUser: RequestUser) {
     const normalizedRole = this.getNormalizedRole(currentUser);
 
-    if (normalizedRole === Role.ADMIN) {
-      return {};
-    }
-
     if (normalizedRole === Role.MANAGER) {
       if (!currentUser.companyId) {
         if (currentUser.role?.toUpperCase() === 'ADMIN') return {};
@@ -74,10 +70,6 @@ export class PayrollService {
     }
 
     const normalizedRole = this.getNormalizedRole(currentUser);
-
-    if (normalizedRole === Role.ADMIN) {
-      return employee;
-    }
 
     if (normalizedRole === Role.MANAGER) {
       if (

@@ -18,37 +18,41 @@ import { Role } from '../common/enums/role.enum';
 
 @Controller('employees')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Post()
+  @Roles(Role.MANAGER, Role.OWNER)
   create(@Body() createEmployeeDto: CreateEmployeeDto, @Request() req: any) {
     return this.employeesService.create(createEmployeeDto, req.user);
   }
 
   @Get()
+  @Roles(Role.MANAGER, Role.EMPLOYEE, Role.OWNER, Role.STAFF)
   findAll(@Request() req: any) {
     return this.employeesService.findAll(req.user);
   }
 
   @Get('active')
+  @Roles(Role.MANAGER, Role.EMPLOYEE, Role.OWNER, Role.STAFF)
   findActive(@Request() req: any) {
     return this.employeesService.findActive(req.user);
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.EMPLOYEE, Role.OWNER, Role.STAFF)
+  @Roles(Role.MANAGER, Role.EMPLOYEE, Role.OWNER, Role.STAFF)
   findOne(@Param('id') id: string, @Request() req: any) {
     return this.employeesService.findOne(id, req.user);
   }
 
   @Patch(':id')
+  @Roles(Role.MANAGER, Role.OWNER)
   update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto, @Request() req: any) {
     return this.employeesService.update(id, updateEmployeeDto, req.user);
   }
 
   @Patch(':id/deactivate')
+  @Roles(Role.MANAGER, Role.OWNER)
   deactivate(@Param('id') id: string, @Request() req: any) {
     return this.employeesService.deactivate(id, req.user);
   }

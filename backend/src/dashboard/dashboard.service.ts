@@ -19,46 +19,62 @@ export class DashboardService {
   ) {}
 
   async getStats() {
-    const totalOrders = await this.orderModel.countDocuments();
-    const completedOrders = await this.orderModel.countDocuments({
-      status: 'completed',
-    });
-    const totalProducts = await this.productModel.countDocuments({
-      isActive: true,
-    });
-    const lowStockProducts = await this.productModel.countDocuments({
-      stockQuantity: { $lte: 10 },
-    });
-    const totalStaff = await this.employeeModel.countDocuments({
-      isActive: true,
-    });
-    const totalUsers = await this.userModel.countDocuments({ isActive: true });
     const totalShops = await this.companyModel.countDocuments();
     const activeShops = await this.companyModel.countDocuments({
       status: 'active',
+      subscriptionStatus: { $in: ['Trial', 'Active'] },
     });
     const totalManagers = await this.userModel.countDocuments({
       role: { $in: [Role.MANAGER, Role.OWNER, 'manager', 'owner'] },
+    });
+    const activeSubscriptions = await this.companyModel.countDocuments({
+      subscriptionStatus: 'Active',
+      status: 'active',
       isActive: true,
     });
+    const atRiskShops = await this.companyModel.countDocuments({
+      subscriptionStatus: { $in: ['Expired', 'Suspended'] },
+    });
+    const renewalAlerts = await this.companyModel.countDocuments({
+      subscriptionStatus: { $in: ['Trial', 'Active'] },
+      nextRenewalDate: {
+        $gte: new Date(),
+        $lte: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      },
+    });
 
-    const totalRevenue = await this.orderModel.aggregate([
-      { $match: { status: 'completed' } },
-      { $group: { _id: null, total: { $sum: '$total' } } },
+    const totalSubscriptionRevenue = await this.companyModel.aggregate([
+      {
+        $match: {
+          subscriptionStatus: { $in: ['Active', 'Trial'] },
+          status: 'active',
+        },
+      },
+      { $group: { _id: null, total: { $sum: '$subscriptionPrice' } } },
+    ]);
+
+    const estimatedYearlyRevenue = await this.companyModel.aggregate([
+      {
+        $match: {
+          subscriptionStatus: { $in: ['Trial', 'Active'] },
+          status: 'active',
+        },
+      },
+      { $group: { _id: null, total: { $sum: '$subscriptionPrice' } } },
     ]);
 
     return {
-      totalOrders,
-      completedOrders,
-      totalProducts,
-      lowStockProducts,
-      totalStaff,
-      totalUsers,
-      totalEmployees: totalStaff,
       totalShops,
       activeShops,
       totalManagers,
-      totalRevenue: totalRevenue[0]?.total || 0,
+      activeSubscriptions,
+      expiredShops: atRiskShops,
+      suspendedOrExpiredShops: atRiskShops,
+      renewalAlerts,
+      totalSubscriptionRevenue:
+        totalSubscriptionRevenue[0]?.total || activeSubscriptions * 50,
+      estimatedYearlyRevenue:
+        estimatedYearlyRevenue[0]?.total || activeShops * 50,
     };
   }
 

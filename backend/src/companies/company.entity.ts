@@ -3,6 +3,8 @@ import { Document, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Company extends Document {
+  static readonly DEFAULT_SUBSCRIPTION_PRICE = 50;
+
   @Prop({ required: true, unique: true, trim: true, index: true })
   shopName: string;
 
@@ -21,11 +23,39 @@ export class Company extends Document {
   @Prop({ trim: true })
   businessType?: string;
 
+  @Prop({ trim: true })
+  description?: string;
+
+  @Prop({ trim: true })
+  whatTheySell?: string;
+
+  @Prop({ trim: true })
+  provinceOrCity?: string;
+
   @Prop({ required: true, enum: ['active', 'inactive'], default: 'active' })
   status: 'active' | 'inactive';
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({
+    required: true,
+    enum: ['Trial', 'Active', 'Expired', 'Suspended'],
+    default: 'Trial',
+  })
+  subscriptionStatus: 'Trial' | 'Active' | 'Expired' | 'Suspended';
+
+  @Prop({ default: Company.DEFAULT_SUBSCRIPTION_PRICE })
+  subscriptionPrice: number;
+
+  @Prop()
+  subscriptionStartDate?: Date;
+
+  @Prop()
+  subscriptionEndDate?: Date;
+
+  @Prop()
+  nextRenewalDate?: Date;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: false, index: true })
   managerId?: Types.ObjectId;
