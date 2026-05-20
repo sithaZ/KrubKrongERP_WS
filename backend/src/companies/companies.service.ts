@@ -177,7 +177,7 @@ export class CompaniesService {
   }
 
   if (normalizeRole(manager.role) !== Role.MANAGER) {
-    throw new BadRequestException('Only MANAGER accounts can be assigned to a shop');
+    throw new BadRequestException('Only OWNER or MANAGER accounts can be assigned to a shop');
   }
 
   const previousManagerId = company.managerId?.toString();
@@ -195,7 +195,7 @@ export class CompaniesService {
   );
 
   manager.companyId = company._id as Types.ObjectId;
-  manager.role = Role.MANAGER;
+  manager.role = Role.OWNER;
   await manager.save();
 
  await this.companyModel.findByIdAndUpdate(
@@ -252,7 +252,7 @@ export class CompaniesService {
         throw new BadRequestException('Username already exists');
       }
 
-      existingUser.role = Role.MANAGER;
+      existingUser.role = Role.OWNER;
       existingUser.companyId = company._id as Types.ObjectId;
       existingUser.name = managerDto.name || existingUser.name;
       existingUser.phone = managerDto.phone || existingUser.phone;
@@ -301,7 +301,7 @@ export class CompaniesService {
       password: hashedPassword,
       name: managerDto.name,
       phone: managerDto.phone || '',
-      role: Role.MANAGER,
+      role: Role.OWNER,
       companyId: company._id,
       isActive: true,
     });

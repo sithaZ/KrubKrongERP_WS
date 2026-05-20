@@ -49,11 +49,9 @@ export class UsersService {
     if (role) {
       const normalizedRole = normalizeRole(role);
 
-      const roleValues = [
-        role,
-        role.toLowerCase(),
-        normalizedRole,
-      ].filter((value): value is string => Boolean(value));
+      const roleValues = [role, role.toLowerCase(), normalizedRole].filter(
+        (value): value is string => Boolean(value),
+      );
 
       query.role = { $in: roleValues };
     }
@@ -86,7 +84,7 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).exec();
+    return this.userModel.findOne({ email: email.trim().toLowerCase() }).exec();
   }
 
   async findOneByUsername(username: string): Promise<User | null> {
@@ -98,7 +96,8 @@ export class UsersService {
 
     const email = userData.email?.trim().toLowerCase();
     const username = userData.username?.trim().toLowerCase();
-    const temporaryPassword = (userData as any).temporaryPassword || userData.password;
+    const temporaryPassword =
+      (userData as any).temporaryPassword || userData.password;
 
     if (!email || !username || !userData.name || !temporaryPassword) {
       throw new BadRequestException(
@@ -132,6 +131,36 @@ export class UsersService {
     return newUser.save();
   }
 
+  async createAdminAccount(userData: Partial<User>): Promise<User> {
+    const email = userData.email?.trim().toLowerCase();
+    const username = userData.username?.trim().toLowerCase();
+    const password = userData.password;
+
+    if (!email || !username || !userData.name || !password) {
+      throw new BadRequestException(
+        'name, email, username, and password are required',
+      );
+    }
+
+    if (await this.userModel.findOne({ email }).exec()) {
+      throw new ConflictException('Email already exists');
+    }
+
+    if (await this.userModel.findOne({ username }).exec()) {
+      throw new ConflictException('Username already exists');
+    }
+
+    const newUser = new this.userModel({
+      ...userData,
+      email,
+      username,
+      role: Role.ADMIN,
+      isActive: true,
+    });
+
+    return newUser.save();
+  }
+
   async update(id: string, updateData: Partial<User>): Promise<User> {
     await this.assertManagerTarget(id);
 
@@ -153,7 +182,9 @@ export class UsersService {
 
     if (updateData.email) {
       updateData.email = updateData.email.trim().toLowerCase();
-      const existingEmail = await this.userModel.findOne({ email: updateData.email });
+      const existingEmail = await this.userModel.findOne({
+        email: updateData.email,
+      });
       if (existingEmail && existingEmail._id.toString() !== id) {
         throw new ConflictException('Email already exists');
       }
@@ -185,7 +216,10 @@ export class UsersService {
     return updatedUser;
   }
 
-  async updateEmployeeAccount(id: string, updateData: Partial<User>): Promise<User> {
+  async updateEmployeeAccount(
+    id: string,
+    updateData: Partial<User>,
+  ): Promise<User> {
     const updatedUser = await this.userModel
       .findByIdAndUpdate(id, updateData, { returnDocument: 'after' })
       .exec();
@@ -272,7 +306,10 @@ export class UsersService {
       );
     }
 
-    if (shop.managerId && shop.managerId.toString() !== manager._id.toString()) {
+    if (
+      shop.managerId &&
+      shop.managerId.toString() !== manager._id.toString()
+    ) {
       await this.userModel.findByIdAndUpdate(shop.managerId, {
         $unset: { companyId: 1 },
       });

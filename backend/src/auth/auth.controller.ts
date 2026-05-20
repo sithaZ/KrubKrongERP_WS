@@ -19,6 +19,11 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @Post('register-admin')
+  registerAdmin(@Body() registerDto: RegisterDto) {
+    return this.authService.registerAdmin(registerDto);
+  }
+
   @UseGuards(AuthGuard)
   @Get('me')
   getCurrentUser(@Request() req: any) {

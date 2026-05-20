@@ -129,8 +129,9 @@ class ProfileBottomSheet extends ConsumerWidget {
             width: double.infinity,
             child: TextButton.icon(
               onPressed: () {
+                final authNotifier = ref.read(authProvider.notifier);
                 Navigator.pop(context);
-                _showLogoutDialog(context, ref);
+                _showLogoutDialog(context, () => authNotifier.logout());
               },
               icon: const Icon(Icons.logout),
               label: const Text('Logout'),
@@ -146,7 +147,7 @@ class ProfileBottomSheet extends ConsumerWidget {
     );
   }
 
-  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+  void _showLogoutDialog(BuildContext context, VoidCallback onConfirmLogout) {
     ModernAlert.show(
       context,
       title: 'Logout',
@@ -154,9 +155,7 @@ class ProfileBottomSheet extends ConsumerWidget {
       icon: Icons.logout,
       iconColor: Colors.redAccent,
       confirmLabel: 'Logout',
-      onConfirm: () {
-        ref.read(authProvider.notifier).logout();
-      },
+      onConfirm: onConfirmLogout,
     );
   }
 }

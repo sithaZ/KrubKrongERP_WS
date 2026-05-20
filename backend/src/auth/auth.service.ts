@@ -14,19 +14,17 @@ export class AuthService {
   ) {}
 
   private buildAuthResponse(user: any, token: string) {
-    const normalizedRole = normalizeRole(user.role) || user.role;
-
     return {
       token,
       access_token: token,
       refreshToken: token,
-      role: normalizedRole,
+      role: user.role,
       username: user.username,
       user: {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
-        role: normalizedRole,
+        role: user.role,
         avatar: user.avatar || null,
         phone: user.phone || null,
         isActive: user.isActive,
@@ -67,6 +65,34 @@ export class AuthService {
     return this.buildAuthResponse(user, token);
   }
 
+  async registerAdmin(registerDto: RegisterDto) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(registerDto.password, salt);
+
+    const userData = {
+      username: registerDto.email.split('@')[0],
+      email: registerDto.email,
+      password: hashedPassword,
+      name: registerDto.name,
+      phone: registerDto.phone,
+      role: Role.ADMIN,
+      isActive: true,
+    };
+
+    const user = await this.usersService.createAdminAccount(userData);
+
+    const token = await this.jwtService.signAsync({
+      sub: user._id.toString(),
+      userId: user._id.toString(),
+      email: user.email,
+      role: Role.ADMIN,
+      companyId: null,
+      shopId: null,
+    });
+
+    return this.buildAuthResponse(user, token);
+  }
+
   async login(email: string, password: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
@@ -102,7 +128,7 @@ export class AuthService {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
-      role: normalizeRole(user.role) || user.role,
+      role: user.role,
       avatar: user.avatar || null,
       phone: user.phone || null,
       isActive: user.isActive,
