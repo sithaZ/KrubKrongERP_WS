@@ -58,6 +58,10 @@ export class Company extends Document {
   nextRenewalDate?: Date;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: false, index: true })
+  ownerId?: Types.ObjectId;
+
+  // Legacy alias kept during migration. It mirrors ownerId in responses.
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false, index: true })
   managerId?: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: false, index: true })

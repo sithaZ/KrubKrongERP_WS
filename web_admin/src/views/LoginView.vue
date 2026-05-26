@@ -19,8 +19,52 @@
             </div>
 
             <div class="input-wrapper">
-              <input type="password" v-model="password" required placeholder=" " />
+              <input
+                :type="showPassword ? 'text' : 'password'"
+                v-model="password"
+                required
+                placeholder=" "
+              />
               <label>Password</label>
+              <button
+                type="button"
+                class="password-toggle"
+                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                @click="showPassword = !showPassword"
+              >
+                <svg
+                  v-if="showPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg
+                  v-else
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="m3 3 18 18" />
+                  <path d="M10.6 10.7a3 3 0 0 0 4.2 4.2" />
+                  <path d="M9.9 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a13.2 13.2 0 0 1-4 4.9" />
+                  <path d="M6.6 6.7C4.1 8.3 2.5 12 2.5 12A13.1 13.1 0 0 0 12 19a11 11 0 0 0 2.2-.2" />
+                </svg>
+              </button>
               <div class="underline"></div>
             </div>
 
@@ -100,6 +144,7 @@ onMounted(() => { typeEffect(); });
 
 const email = ref('');
 const password = ref('');
+const showPassword = ref(false);
 const errorMessage = ref('');
 const isLoading = ref(false);
 const router = useRouter();
@@ -264,9 +309,20 @@ const handleLogin = async () => {
 .modern-form { display: flex; flex-direction: column; gap: 2.2rem; }
 .input-wrapper { position: relative; }
 .input-wrapper input {
-  width: 100%; padding: 10px 0; font-size: 1rem; color: white;
+  width: 100%; padding: 10px 40px 10px 0; font-size: 1rem; color: white;
   background: transparent; border: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2); outline: none;
+}
+
+.input-wrapper input:-webkit-autofill,
+.input-wrapper input:-webkit-autofill:hover,
+.input-wrapper input:-webkit-autofill:focus,
+.input-wrapper input:-webkit-autofill:active {
+  -webkit-text-fill-color: white;
+  -webkit-box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.95) inset;
+  box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.95) inset;
+  transition: background-color 9999s ease-out 0s;
+  caret-color: white;
 }
 .input-wrapper label {
   position: absolute; top: 10px; left: 0; color: #64748b;
@@ -281,6 +337,25 @@ const handleLogin = async () => {
   background: #38bdf8; transition: 0.4s;
 }
 .input-wrapper input:focus ~ .underline { width: 100%; }
+
+.password-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: #38bdf8;
+}
 
 .glow-btn {
   background: #38bdf8; color: #0f172a; border: none; padding: 1rem;

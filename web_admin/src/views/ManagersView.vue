@@ -2,11 +2,11 @@
   <section class="content-area managers-page">
     <div class="page-header">
       <div>
-        <h2>Shop Owners</h2>
-        <p>Create, edit, activate, deactivate, reset passwords, and reassign shop owners between shops.</p>
+        <h2>Managers</h2>
+        <p>Create, edit, activate, deactivate, reset passwords, and assign managers to shops.</p>
       </div>
 
-      <button class="erp-btn" type="button" @click="openCreateModal">Create Shop Owner</button>
+      <button class="erp-btn" type="button" @click="openCreateModal">Create Manager</button>
     </div>
 
     <div class="erp-card toolbar-card">
@@ -47,7 +47,7 @@
     </div>
 
     <div v-if="errorMessage" class="erp-card error-banner">
-      <strong>Unable to load shop owners.</strong>
+      <strong>Unable to load managers.</strong>
       <span>{{ errorMessage }}</span>
     </div>
 
@@ -56,7 +56,7 @@
         <table class="erp-table managers-table">
           <thead>
             <tr>
-              <th>Shop Owner</th>
+              <th>Manager</th>
               <th>Username</th>
               <th>Shop</th>
               <th>Status</th>
@@ -71,7 +71,7 @@
             </template>
 
             <tr v-else-if="filteredManagers.length === 0" class="state-row">
-              <td colspan="5">No shop owners found.</td>
+              <td colspan="5">No managers found.</td>
             </tr>
 
             <tr v-for="manager in filteredManagers" :key="manager.id">
@@ -89,23 +89,27 @@
               </td>
               <td>
                 <div class="actions-inline">
-                  <button class="action-chip edit" type="button" @click="openEditModal(manager)">
-                    Edit
-                  </button>
-                  <button class="action-chip assign" type="button" @click="openAssignModal(manager)">
-                    Reassign Shop
-                  </button>
-                  <button class="action-chip reset" type="button" @click="resetPassword(manager)">
-                    Reset Password
-                  </button>
-                  <button
-                    class="action-chip"
-                    :class="manager.isActive ? 'deactivate' : 'activate'"
-                    type="button"
-                    @click="toggleManager(manager)"
-                  >
-                    {{ manager.isActive ? 'Deactivate' : 'Activate' }}
-                  </button>
+                  <div class="action-menu">
+                    <button class="action-chip edit" type="button" @click="openEditModal(manager)">
+                      Edit
+                    </button>
+                    <div class="action-menu-popover">
+                      <button class="action-chip assign" type="button" @click="openAssignModal(manager)">
+                        Reassign Shop
+                      </button>
+                      <button class="action-chip reset" type="button" @click="resetPassword(manager)">
+                        Reset Password
+                      </button>
+                      <button
+                        class="action-chip"
+                        :class="manager.isActive ? 'deactivate' : 'activate'"
+                        type="button"
+                        @click="toggleManager(manager)"
+                      >
+                        {{ manager.isActive ? 'Deactivate' : 'Activate' }}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -118,8 +122,8 @@
       <div class="modal-content">
         <div class="modal-header">
           <div>
-            <h3>{{ isEditing ? 'Edit Shop Owner' : 'Create Shop Owner' }}</h3>
-            <p class="modal-subtitle">Shop owners use the MANAGER role internally so the same account can log in to Flutter for shop operations.</p>
+            <h3>{{ isEditing ? 'Edit Manager' : 'Create Manager' }}</h3>
+            <p class="modal-subtitle">Managers belong to one shop and can log in to the same mobile operations portal as the owner.</p>
           </div>
           <button class="close-btn" type="button" @click="closeFormModal">X</button>
         </div>
@@ -186,7 +190,7 @@
           <div class="modal-footer">
             <button class="erp-btn-secondary" type="button" @click="closeFormModal">Cancel</button>
             <button class="erp-btn" type="submit" :disabled="isSaving">
-              {{ isSaving ? 'Saving...' : isEditing ? 'Save Shop Owner' : 'Create Shop Owner' }}
+              {{ isSaving ? 'Saving...' : isEditing ? 'Save Manager' : 'Create Manager' }}
             </button>
           </div>
         </form>
@@ -198,7 +202,7 @@
         <div class="modal-header">
           <div>
             <h3>Assign Shop</h3>
-            <p class="modal-subtitle">Reassign {{ selectedManager.name }} as the shop owner for a different shop.</p>
+            <p class="modal-subtitle">Assign {{ selectedManager.name }} to a different shop.</p>
           </div>
           <button class="close-btn" type="button" @click="closeAssignModal">X</button>
         </div>
@@ -231,7 +235,7 @@
         <div class="modal-header">
           <div>
             <h3>Temporary Credentials</h3>
-            <p class="modal-subtitle">Share these one-time credentials with the shop owner securely.</p>
+            <p class="modal-subtitle">Share these one-time credentials with the manager securely.</p>
           </div>
           <button class="close-btn" type="button" @click="credentialsModal = null">X</button>
         </div>
@@ -358,7 +362,7 @@ const loadPage = async () => {
     shops.value = shopData
     managers.value = managerData
   } catch (error) {
-    errorMessage.value = error instanceof ApiError ? error.message : 'Unable to load shop owners.'
+    errorMessage.value = error instanceof ApiError ? error.message : 'Unable to load managers.'
   } finally {
     isLoading.value = false
   }
@@ -439,7 +443,7 @@ const saveManager = async () => {
     closeFormModal()
     await loadPage()
   } catch (error) {
-    formError.value = error instanceof ApiError ? error.message : 'Unable to save shop owner.'
+    formError.value = error instanceof ApiError ? error.message : 'Unable to save manager.'
   } finally {
     isSaving.value = false
   }
@@ -489,7 +493,7 @@ const toggleManager = async (manager: Manager) => {
     })
     await loadPage()
   } catch (error) {
-    errorMessage.value = error instanceof ApiError ? error.message : 'Unable to update shop owner status.'
+    errorMessage.value = error instanceof ApiError ? error.message : 'Unable to update manager status.'
   }
 }
 
@@ -570,8 +574,42 @@ onMounted(loadPage)
 
 .actions-inline {
   display: flex;
-  flex-wrap: wrap;
   gap: 0.55rem;
+  align-items: center;
+}
+
+.action-menu {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.action-menu-popover {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 50%;
+  min-width: 180px;
+  padding: 0.45rem;
+  border-radius: 14px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+  display: grid;
+  gap: 0.45rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -6px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.action-menu:hover .action-menu-popover,
+.action-menu:focus-within .action-menu-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
 }
 
 .action-chip {
@@ -586,6 +624,10 @@ onMounted(loadPage)
 
 .action-chip:hover {
   transform: translateY(-1px);
+}
+
+.action-menu-popover .action-chip {
+  width: 100%;
 }
 
 .action-chip.edit {

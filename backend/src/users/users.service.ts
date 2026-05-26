@@ -10,7 +10,6 @@ import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { Role } from '../common/enums/role.enum';
-import { normalizeRole } from '../common/utils/role.utils';
 import { EventsGateway } from '../events/events.gateway';
 import { User } from './user.entity';
 import { Company } from '../companies/company.entity';
@@ -23,8 +22,14 @@ export class UsersService {
     private eventsGateway: EventsGateway,
   ) {}
 
+  private normalizeExactRole(role?: string | null) {
+    return String(role ?? '')
+      .trim()
+      .toUpperCase();
+  }
+
   private assertManagerRole(role?: string) {
-    if (normalizeRole(role) !== Role.MANAGER) {
+    if (this.normalizeExactRole(role) !== Role.MANAGER) {
       throw new ForbiddenException(
         'ADMIN can only create or manage manager accounts through /users',
       );
@@ -34,7 +39,7 @@ export class UsersService {
   private async assertManagerTarget(id: string) {
     const user = await this.findOne(id);
 
-    if (normalizeRole(user.role) !== Role.MANAGER) {
+    if (this.normalizeExactRole(user.role) !== Role.MANAGER) {
       throw new ForbiddenException(
         'ADMIN cannot directly manage employee accounts through /users',
       );
@@ -47,13 +52,15 @@ export class UsersService {
     const query: any = {};
 
     if (role) {
-      const normalizedRole = normalizeRole(role);
+      const normalizedRole = this.normalizeExactRole(role);
 
-      const roleValues = [role, role.toLowerCase(), normalizedRole].filter(
-        (value): value is string => Boolean(value),
-      );
-
-      query.role = { $in: roleValues };
+      if (normalizedRole === Role.MANAGER) {
+        query.role = { $in: [Role.MANAGER, Role.MANAGER.toLowerCase()] };
+      } else if (normalizedRole === Role.OWNER) {
+        query.role = { $in: [Role.OWNER, Role.OWNER.toLowerCase()] };
+      } else {
+        query.role = { $in: [normalizedRole, normalizedRole.toLowerCase()] };
+      }
     }
 
     return this.userModel
@@ -65,7 +72,7 @@ export class UsersService {
 
   async findManagers(): Promise<User[]> {
     return this.userModel
-      .find({ role: Role.MANAGER })
+      .find({ role: { $in: [Role.MANAGER, Role.MANAGER.toLowerCase()] } })
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -95,7 +102,7 @@ export class UsersService {
     this.assertManagerRole(userData.role);
 
     const email = userData.email?.trim().toLowerCase();
-    const username = userData.username?.trim().toLowerCase();
+    const username = userData.username?.trim();
     const temporaryPassword =
       (userData as any).temporaryPassword || userData.password;
 
@@ -133,7 +140,7 @@ export class UsersService {
 
   async createAdminAccount(userData: Partial<User>): Promise<User> {
     const email = userData.email?.trim().toLowerCase();
-    const username = userData.username?.trim().toLowerCase();
+    const username = userData.username?.trim();
     const password = userData.password;
 
     if (!email || !username || !userData.name || !password) {
@@ -164,7 +171,10 @@ export class UsersService {
   async update(id: string, updateData: Partial<User>): Promise<User> {
     await this.assertManagerTarget(id);
 
-    if (updateData.role && normalizeRole(updateData.role) !== Role.MANAGER) {
+    if (
+      updateData.role &&
+      this.normalizeExactRole(updateData.role) !== Role.MANAGER
+    ) {
       throw new ForbiddenException('Manager accounts must remain MANAGER role');
     }
 
@@ -191,7 +201,7 @@ export class UsersService {
     }
 
     if (updateData.username) {
-      updateData.username = updateData.username.trim().toLowerCase();
+      updateData.username = updateData.username.trim();
       const existingUsername = await this.userModel.findOne({
         username: updateData.username,
       });
@@ -296,32 +306,6 @@ export class UsersService {
     if (!shop) {
       throw new NotFoundException('Shop not found');
     }
-
-    const previousManagerId = manager.companyId?.toString();
-
-    if (previousManagerId && previousManagerId !== shopId) {
-      await this.companyModel.updateOne(
-        { _id: new Types.ObjectId(previousManagerId), managerId: manager._id },
-        { $unset: { managerId: 1 } },
-      );
-    }
-
-    if (
-      shop.managerId &&
-      shop.managerId.toString() !== manager._id.toString()
-    ) {
-      await this.userModel.findByIdAndUpdate(shop.managerId, {
-        $unset: { companyId: 1 },
-      });
-    }
-
-    await this.companyModel.updateMany(
-      { managerId: manager._id, _id: { $ne: shop._id } },
-      { $unset: { managerId: 1 } },
-    );
-
-    shop.managerId = manager._id as Types.ObjectId;
-    await shop.save();
 
     manager.companyId = shop._id as Types.ObjectId;
     manager.isActive = manager.isActive ?? true;

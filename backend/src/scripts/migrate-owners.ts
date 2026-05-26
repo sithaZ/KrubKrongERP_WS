@@ -1,50 +1,92 @@
-import mongoose from 'mongoose';
+import mongoose, { Model, Types } from 'mongoose';
 import * as dotenv from 'dotenv';
+import { Company, CompanySchema } from '../companies/company.entity';
 import { User, UserSchema } from '../users/user.entity';
+import { Role } from '../common/enums/role.enum';
 
 dotenv.config();
+
+type CompanyDocument = Company & {
+  _id: Types.ObjectId;
+};
+
+type UserDocument = User & {
+  _id: Types.ObjectId;
+};
 
 async function run() {
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) {
-    console.error('MONGO_URI is not set in environment!');
+    console.error('[migrate-owners] MONGO_URI is not set.');
+    process.exitCode = 1;
     return;
   }
 
-  console.log('Connecting to MongoDB...');
+  console.log('[migrate-owners] Connecting to MongoDB...');
   await mongoose.connect(mongoUri);
 
   try {
-    const userModel = mongoose.model(User.name, UserSchema);
+    const companyModel: Model<CompanyDocument> = mongoose.model(
+      Company.name,
+      CompanySchema,
+    );
+    const userModel: Model<UserDocument> = mongoose.model(User.name, UserSchema);
 
-    // Get all users
-    const users = await userModel.find({}).exec();
-    console.log(`Found ${users.length} total users in the database:`);
+    const companies = await companyModel.find({}).exec();
+    let updatedShops = 0;
+    let updatedUsers = 0;
 
-    let updatedCount = 0;
+    for (const company of companies) {
+      const legacyOwnerId = company.ownerId || company.managerId;
 
-    for (const user of users) {
-      console.log(`- User: "${user.name}", Role: "${user.role}", Email: "${user.email}"`);
-      
-      // If the user's name/username contains "owner" (case-insensitive) or role is manager (case-insensitive)
-      const nameMatch = user.name?.toLowerCase().includes('owner') || user.username?.toLowerCase().includes('owner');
-      const roleMatch = user.role?.toLowerCase() === 'manager';
+      if (!legacyOwnerId) {
+        continue;
+      }
 
-      if ((nameMatch || roleMatch) && user.role !== 'OWNER') {
-        console.log(`  --> Updating user "${user.name}" role from "${user.role}" to "OWNER"...`);
-        user.role = 'OWNER';
-        await user.save();
-        updatedCount++;
+      const ownerUser = await userModel.findById(legacyOwnerId).exec();
+
+      if (!ownerUser) {
+        console.warn(
+          `[migrate-owners] Shop "${company.shopName}" references missing user ${legacyOwnerId.toString()}.`,
+        );
+        continue;
+      }
+
+      let changed = false;
+
+      if (!company.ownerId || company.ownerId.toString() !== ownerUser._id.toString()) {
+        company.ownerId = ownerUser._id as Types.ObjectId;
+        changed = true;
+      }
+
+      if (!company.managerId || company.managerId.toString() !== ownerUser._id.toString()) {
+        company.managerId = ownerUser._id as Types.ObjectId;
+        changed = true;
+      }
+
+      if (changed) {
+        await company.save();
+        updatedShops++;
+      }
+
+      if (ownerUser.role !== Role.OWNER) {
+        ownerUser.role = Role.OWNER;
+        ownerUser.companyId = company._id as Types.ObjectId;
+        await ownerUser.save();
+        updatedUsers++;
       }
     }
 
-    console.log(`Migration complete! Successfully updated ${updatedCount} users to OWNER.`);
+    console.log(
+      `[migrate-owners] Migration complete. Updated ${updatedShops} shops and ${updatedUsers} owner accounts.`,
+    );
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error('[migrate-owners] Migration failed:', error);
+    process.exitCode = 1;
   } finally {
     await mongoose.connection.close();
-    console.log('Connection closed.');
+    console.log('[migrate-owners] Connection closed.');
   }
 }
 
-run();
+void run();

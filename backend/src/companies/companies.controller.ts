@@ -12,7 +12,6 @@ import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CreateCompanyManagerDto } from './dto/create-company-manager.dto';
-import { AssignCompanyManagerDto } from './dto/assign-company-manager.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -56,13 +55,13 @@ export class CompaniesController {
     return this.companiesService.createManager(id, dto);
   }
 
-  @Patch(':id/assign-manager')
+  @Post(':id/owner')
   @Roles(Role.ADMIN)
-  assignManager(
+  createOwner(
     @Param('id') id: string,
-    @Body() dto: AssignCompanyManagerDto,
+    @Body() dto: CreateCompanyManagerDto,
     @Request() req: any,
   ) {
-    return this.companiesService.assignManager(id, dto.managerId);
+    return this.companiesService.createOwner(id, dto);
   }
 }

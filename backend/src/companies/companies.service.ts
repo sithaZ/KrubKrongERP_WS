@@ -11,7 +11,6 @@ import { randomBytes } from 'crypto';
 import { Company } from './company.entity';
 import { User } from '../users/user.entity';
 import { Role } from '../common/enums/role.enum';
-import { normalizeRole } from '../common/utils/role.utils';
 
 @Injectable()
 export class CompaniesService {
@@ -40,6 +39,26 @@ export class CompaniesService {
       role: manager.role,
       companyId: manager.companyId?.toString() || null,
       isActive: manager.isActive,
+    };
+  }
+
+  private async mapCompanyResponse(company: any) {
+    const companyObj = company?.toObject ? company.toObject() : company;
+    const ownerAccount = companyObj?.ownerId || companyObj?.managerId || null;
+    const managers = await this.userModel
+      .find({
+        companyId: companyObj._id,
+        role: { $in: [Role.MANAGER, Role.MANAGER.toLowerCase()] },
+      })
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return {
+      ...companyObj,
+      ownerId: ownerAccount,
+      // Preserve the legacy field for existing admin UI consumers.
+      managerId: ownerAccount,
+      managers: managers.map((manager) => this.sanitizeManager(manager)),
     };
   }
 
@@ -90,18 +109,45 @@ export class CompaniesService {
         : undefined,
     });
 
-    return this.companyModel
+    const createdCompany = await this.companyModel
       .findById(company._id)
+      .populate('ownerId', this.managerPopulateFields)
       .populate('managerId', this.managerPopulateFields)
       .exec();
+
+    const shop = await this.mapCompanyResponse(createdCompany);
+
+    if (!createCompanyDto.createOwnerAccount) {
+      return shop;
+    }
+
+    const ownerResult = await this.createOwner(company._id.toString(), {
+      name: createCompanyDto.ownerName,
+      email: createCompanyDto.ownerEmail,
+      phone: createCompanyDto.phone,
+      username:
+        createCompanyDto.ownerUsername || createCompanyDto.ownerEmail.split('@')[0],
+      temporaryPassword: createCompanyDto.ownerTemporaryPassword,
+    });
+
+    return {
+      shop: ownerResult.shop,
+      owner: ownerResult.owner,
+      credentials: ownerResult.credentials,
+    };
   }
 
   async findAll() {
-    return this.companyModel
+    const companies = await this.companyModel
       .find()
+      .populate('ownerId', this.managerPopulateFields)
       .populate('managerId', this.managerPopulateFields)
       .sort({ createdAt: -1 })
       .exec();
+
+    return Promise.all(
+      companies.map((company) => this.mapCompanyResponse(company)),
+    );
   }
 
   async findOne(id: string) {
@@ -111,6 +157,7 @@ export class CompaniesService {
 
     const company = await this.companyModel
       .findById(id)
+      .populate('ownerId', this.managerPopulateFields)
       .populate('managerId', this.managerPopulateFields)
       .exec();
 
@@ -118,7 +165,7 @@ export class CompaniesService {
       throw new NotFoundException('Shop not found');
     }
 
-    return company;
+    return this.mapCompanyResponse(company);
   }
 
   async update(id: string, updateCompanyDto: any) {
@@ -153,6 +200,7 @@ export class CompaniesService {
 
     const company = await this.companyModel
       .findByIdAndUpdate(id, updateData, { new: true })
+      .populate('ownerId', this.managerPopulateFields)
       .populate('managerId', this.managerPopulateFields)
       .exec();
 
@@ -160,55 +208,8 @@ export class CompaniesService {
       throw new NotFoundException('Shop not found');
     }
 
-    return company;
+    return this.mapCompanyResponse(company);
   }
-
- async assignManager(companyId: string, managerId: string) {
-  const company = await this.companyModel.findById(companyId);
-
-  if (!company) {
-    throw new NotFoundException('Shop not found');
-  }
-
-  const manager = await this.userModel.findById(managerId);
-
-  if (!manager) {
-    throw new NotFoundException('Manager not found');
-  }
-
-  if (normalizeRole(manager.role) !== Role.MANAGER) {
-    throw new BadRequestException('Only OWNER or MANAGER accounts can be assigned to a shop');
-  }
-
-  const previousManagerId = company.managerId?.toString();
-  if (previousManagerId && previousManagerId !== managerId) {
-    const previousManager = await this.userModel.findById(previousManagerId);
-    if (previousManager?.companyId?.toString() === companyId) {
-      previousManager.companyId = undefined;
-      await previousManager.save();
-    }
-  }
-
-  await this.companyModel.updateMany(
-    { managerId: manager._id, _id: { $ne: company._id } },
-    { $unset: { managerId: 1 } },
-  );
-
-  manager.companyId = company._id as Types.ObjectId;
-  manager.role = Role.OWNER;
-  await manager.save();
-
- await this.companyModel.findByIdAndUpdate(
-  companyId,
-  { managerId: new Types.ObjectId(managerId) },
-  { new: true, runValidators: false },
-);
-
- return this.companyModel
-    .findById(companyId)
-    .populate('managerId', this.managerPopulateFields)
-    .exec();
-}
 
   async createManager(companyId: string, managerDto: any) {
     if (!Types.ObjectId.isValid(companyId)) {
@@ -221,20 +222,13 @@ export class CompaniesService {
       throw new NotFoundException('Shop not found');
     }
 
-    const existingAssignedManagerId = company.managerId?.toString();
-    if (existingAssignedManagerId) {
-      await this.userModel.findByIdAndUpdate(existingAssignedManagerId, {
-        $unset: { companyId: 1 },
-      });
-    }
-
     const existingUser = await this.userModel
       .findOne({ email: managerDto.email.trim().toLowerCase() })
       .exec();
 
-    const normalizedUsername = (managerDto.username || managerDto.email.split('@')[0])
-      .trim()
-      .toLowerCase();
+    const normalizedUsername = (
+      managerDto.username || managerDto.email.split('@')[0]
+    ).trim();
     const temporaryPassword =
       managerDto.temporaryPassword ||
       managerDto.password ||
@@ -245,6 +239,14 @@ export class CompaniesService {
     }
 
     if (existingUser) {
+      const existingRole = String(existingUser.role || '').trim().toUpperCase();
+
+      if (existingRole && existingRole !== Role.MANAGER) {
+        throw new BadRequestException(
+          'This account already exists with a non-manager role.',
+        );
+      }
+
       if (
         existingUser.username !== normalizedUsername &&
         (await this.userModel.findOne({ username: normalizedUsername }).exec())
@@ -252,7 +254,7 @@ export class CompaniesService {
         throw new BadRequestException('Username already exists');
       }
 
-      existingUser.role = Role.OWNER;
+      existingUser.role = Role.MANAGER;
       existingUser.companyId = company._id as Types.ObjectId;
       existingUser.name = managerDto.name || existingUser.name;
       existingUser.phone = managerDto.phone || existingUser.phone;
@@ -261,21 +263,14 @@ export class CompaniesService {
       existingUser.password = await bcrypt.hash(temporaryPassword, 10);
       await existingUser.save();
 
-      await this.companyModel.updateMany(
-        { managerId: existingUser._id, _id: { $ne: company._id } },
-        { $unset: { managerId: 1 } },
-      );
-
-      company.managerId = existingUser._id as Types.ObjectId;
-      await company.save();
-
-      const shop = await this.companyModel
-        .findById(companyId)
-        .populate('managerId', this.managerPopulateFields)
-        .exec();
-
       return {
-        shop,
+        shop: await this.mapCompanyResponse(
+          await this.companyModel
+            .findById(companyId)
+            .populate('ownerId', this.managerPopulateFields)
+            .populate('managerId', this.managerPopulateFields)
+            .exec(),
+        ),
         manager: this.sanitizeManager(existingUser),
         credentials: {
           username: existingUser.username,
@@ -301,26 +296,118 @@ export class CompaniesService {
       password: hashedPassword,
       name: managerDto.name,
       phone: managerDto.phone || '',
-      role: Role.OWNER,
+      role: Role.MANAGER,
       companyId: company._id,
       isActive: true,
     });
 
-    company.managerId = manager._id as Types.ObjectId;
-    await company.save();
-
-    const shop = await this.companyModel
-      .findById(companyId)
-      .populate('managerId', this.managerPopulateFields)
-      .exec();
-
     return {
-      shop,
+      shop: await this.mapCompanyResponse(
+        await this.companyModel
+          .findById(companyId)
+          .populate('ownerId', this.managerPopulateFields)
+          .populate('managerId', this.managerPopulateFields)
+          .exec(),
+      ),
       manager: this.sanitizeManager(manager),
       credentials: {
         username: manager.username,
         temporaryPassword,
         email: manager.email,
+      },
+    };
+  }
+
+  async createOwner(companyId: string, ownerDto: any) {
+    if (!Types.ObjectId.isValid(companyId)) {
+      throw new BadRequestException('Invalid shop ID');
+    }
+
+    const company = await this.companyModel.findById(companyId).exec();
+
+    if (!company) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    const existingUser = await this.userModel
+      .findOne({ email: ownerDto.email.trim().toLowerCase() })
+      .exec();
+
+    const normalizedUsername = (
+      ownerDto.username || ownerDto.email.split('@')[0]
+    ).trim();
+    const temporaryPassword =
+      ownerDto.temporaryPassword ||
+      ownerDto.password ||
+      `OWN-${randomBytes(4).toString('hex')}`;
+
+    if (!normalizedUsername) {
+      throw new BadRequestException('Username is required');
+    }
+
+    const previousOwnerId =
+      company.ownerId?.toString() || company.managerId?.toString() || null;
+
+    let owner: User;
+
+    if (existingUser) {
+      if (
+        existingUser.username !== normalizedUsername &&
+        (await this.userModel.findOne({ username: normalizedUsername }).exec())
+      ) {
+        throw new BadRequestException('Username already exists');
+      }
+
+      owner = existingUser;
+      owner.role = Role.OWNER;
+      owner.companyId = company._id as Types.ObjectId;
+      owner.name = ownerDto.name || owner.name;
+      owner.phone = ownerDto.phone || owner.phone;
+      owner.username = normalizedUsername;
+      owner.isActive = true;
+      owner.password = await bcrypt.hash(temporaryPassword, 10);
+      await owner.save();
+    } else {
+      owner = await this.userModel.create({
+        username: normalizedUsername,
+        email: ownerDto.email.trim().toLowerCase(),
+        password: await bcrypt.hash(temporaryPassword, 10),
+        name: ownerDto.name,
+        phone: ownerDto.phone || '',
+        role: Role.OWNER,
+        companyId: company._id,
+        isActive: true,
+      });
+    }
+
+    if (previousOwnerId && previousOwnerId !== owner._id.toString()) {
+      await this.userModel.findByIdAndUpdate(previousOwnerId, {
+        $unset: { companyId: 1 },
+      });
+    }
+
+    await this.companyModel.updateMany(
+      { ownerId: owner._id, _id: { $ne: company._id } },
+      { $unset: { ownerId: 1, managerId: 1 } },
+    );
+
+    company.ownerId = owner._id as Types.ObjectId;
+    company.managerId = owner._id as Types.ObjectId;
+    await company.save();
+
+    return {
+      shop: await this.mapCompanyResponse(
+        await this.companyModel
+          .findById(companyId)
+          .populate('ownerId', this.managerPopulateFields)
+          .populate('managerId', this.managerPopulateFields)
+          .exec(),
+      ),
+      owner: this.sanitizeManager(owner),
+      credentials: {
+        username: owner.username,
+        temporaryPassword,
+        email: owner.email,
       },
     };
   }

@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEmail,
   IsIn,
   IsDateString,
@@ -53,6 +54,18 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsMongoId()
   managerId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  createOwnerAccount?: boolean;
+
+  @IsOptional()
+  @IsString()
+  ownerUsername?: string;
+
+  @IsOptional()
+  @IsString()
+  ownerTemporaryPassword?: string;
 
   @IsOptional()
   @IsIn(['Trial', 'Active', 'Expired', 'Suspended'])
