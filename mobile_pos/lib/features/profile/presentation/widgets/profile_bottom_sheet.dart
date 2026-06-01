@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -20,128 +21,133 @@ class ProfileBottomSheet extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final bg = isDark ? AppTheme.darkSurface : AppTheme.lightSurface;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: border)),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag Handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.onSurfaceVariant.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(2),
+          // Drag handle
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-          const SizedBox(height: 32),
-          
-          // Header Profile Info
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 36,
-                backgroundColor: colorScheme.primaryContainer,
-                child: Text(
-                  user?.initials ?? 'U',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.bold,
+
+          // Profile header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+            child: Row(
+              children: [
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [AppTheme.primary, Color(0xFF1A3BA0)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      user?.initials ?? 'U',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.name ?? 'User Name',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user?.email ?? 'No email',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.name ?? 'User Name',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
-                      child: Text(
-                        user?.roleLabel ?? 'ROLE',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSecondaryContainer,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.email ?? 'No email',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      StatusBadge(
+                        label: user?.roleLabel ?? 'ROLE',
+                        color: AppTheme.primary,
+                        backgroundColor: AppTheme.primaryContainer,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          
-          const Divider(),
-          
-          // Options
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Edit Profile'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Edit Profile
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Language'),
-            trailing: const Text('English'),
-            onTap: () {
-              // TODO: Change Language
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.storefront),
-            title: const Text('Switch Shop'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Switch Shop logic for admins
-            },
-          ),
-          
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 16),
-          
-          // Logout Button
-          SizedBox(
-            width: double.infinity,
-            child: TextButton.icon(
-              onPressed: () {
-                final authNotifier = ref.read(authProvider.notifier);
-                Navigator.pop(context);
-                _showLogoutDialog(context, () => authNotifier.logout());
-              },
-              icon: const Icon(Icons.logout),
-              label: const Text('Logout'),
-              style: TextButton.styleFrom(
-                foregroundColor: colorScheme.error,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
+              ],
             ),
           ),
+
+          const SizedBox(height: 20),
+          Divider(height: 1, color: border),
+
+          // Menu items
+          _MenuItem(
+            icon: Icons.person_outline_rounded,
+            label: 'Edit Profile',
+            isDark: isDark,
+            onTap: () {},
+          ),
+          _MenuItem(
+            icon: Icons.language_rounded,
+            label: 'Language',
+            trailing: Text(
+              'English',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+              ),
+            ),
+            isDark: isDark,
+            onTap: () {},
+          ),
+          _MenuItem(
+            icon: Icons.storefront_rounded,
+            label: 'Switch Shop',
+            isDark: isDark,
+            onTap: () {},
+          ),
+
+          Divider(height: 1, color: border),
+
+          // Logout
+          _MenuItem(
+            icon: Icons.logout_rounded,
+            label: 'Sign Out',
+            color: AppTheme.error,
+            isDark: isDark,
+            onTap: () {
+              final authNotifier = ref.read(authProvider.notifier);
+              Navigator.pop(context);
+              _showLogoutDialog(context, () => authNotifier.logout());
+            },
+          ),
+
+          // Safe area padding
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
         ],
       ),
     );
@@ -150,12 +156,50 @@ class ProfileBottomSheet extends ConsumerWidget {
   void _showLogoutDialog(BuildContext context, VoidCallback onConfirmLogout) {
     ModernAlert.show(
       context,
-      title: 'Logout',
-      message: 'Are you sure you want to log out of your account?',
-      icon: Icons.logout,
-      iconColor: Colors.redAccent,
-      confirmLabel: 'Logout',
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out of your account?',
+      icon: Icons.logout_rounded,
+      iconColor: AppTheme.error,
+      confirmLabel: 'Sign Out',
+      cancelLabel: 'Cancel',
       onConfirm: onConfirmLogout,
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+    this.trailing,
+    this.color,
+  });
+  final IconData icon;
+  final String label;
+  final bool isDark;
+  final VoidCallback onTap;
+  final Widget? trailing;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final resolvedColor = color ?? (isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary);
+
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      leading: Icon(icon, color: color ?? (isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary), size: 20),
+      title: Text(
+        label,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: resolvedColor,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      trailing: trailing ?? (color == null ? const Icon(Icons.chevron_right_rounded, size: 18) : null),
     );
   }
 }
