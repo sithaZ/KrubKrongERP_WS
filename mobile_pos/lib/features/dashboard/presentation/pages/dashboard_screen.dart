@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../profile/presentation/widgets/profile_bottom_sheet.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../app/router/route_paths.dart';
+import 'package:go_router/go_router.dart';
 
-/// Dashboard screen
+/// Role-based ERP Dashboard screen
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final user = ref.watch(currentUserProvider);
+
+    // Identify role
+    final isStaff = user?.rawRole.toUpperCase() == 'EMPLOYEE' || user?.rawRole.toUpperCase() == 'STAFF';
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
@@ -32,73 +39,90 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Hero Sales Card ─────────────────────
-            _HeroSalesCard(isDark: isDark, colorScheme: colorScheme, theme: theme),
-            const SizedBox(height: 28),
+      body: isStaff
+          ? _StaffDashboard(isDark: isDark, theme: theme, userName: user?.displayName ?? 'Staff')
+          : _ManagerDashboard(isDark: isDark, theme: theme),
+    );
+  }
+}
 
-            // ── Quick Stats Row ──────────────────────
-            const SectionHeader(title: 'Quick Stats'),
-            const SizedBox(height: 14),
-            _QuickStatsRow(isDark: isDark),
-            const SizedBox(height: 28),
+// ─────────────────────────────────────────────────────────────────────────────
+// ── MANAGER / OWNER DASHBOARD VIEW
+// ─────────────────────────────────────────────────────────────────────────────
+class _ManagerDashboard extends StatelessWidget {
+  const _ManagerDashboard({required this.isDark, required this.theme});
+  final bool isDark;
+  final ThemeData theme;
 
-            // ── Live Status ──────────────────────────
-            const SectionHeader(title: 'Staff Status'),
-            const SizedBox(height: 14),
-            _StaffStatusRow(isDark: isDark),
-            const SizedBox(height: 28),
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = theme.colorScheme;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Hero Sales Card
+          _HeroSalesCard(isDark: isDark, colorScheme: colorScheme, theme: theme),
+          const SizedBox(height: 28),
 
-            // ── Recent Activity ──────────────────────
-            SectionHeader(
-              title: 'Recent Activity',
-              action: TextButton(
-                onPressed: () {},
-                child: const Text('View All'),
-              ),
+          // Quick Stats Row
+          const SectionHeader(title: 'Quick Stats'),
+          const SizedBox(height: 14),
+          _QuickStatsRow(isDark: isDark),
+          const SizedBox(height: 28),
+
+          // Live Status
+          const SectionHeader(title: 'Staff Attendance Summary'),
+          const SizedBox(height: 14),
+          _StaffStatusRow(isDark: isDark),
+          const SizedBox(height: 28),
+
+          // Recent Activity
+          SectionHeader(
+            title: 'Recent Activity',
+            action: TextButton(
+              onPressed: () {},
+              child: const Text('View All'),
             ),
-            const SizedBox(height: 8),
-            _ActivityTile(
-              icon: Icons.receipt_long_rounded,
-              iconBgColor: AppTheme.primaryContainer,
-              iconColor: AppTheme.primary,
-              title: 'Order #1042',
-              subtitle: '2 items · \$45.00',
-              time: 'Just now',
-              isDark: isDark,
-            ),
-            const SizedBox(height: 10),
-            _ActivityTile(
-              icon: Icons.person_add_rounded,
-              iconBgColor: AppTheme.successSurface,
-              iconColor: AppTheme.success,
-              title: 'Staff Check-in',
-              subtitle: 'Sok Dara arrived',
-              time: '15m ago',
-              isDark: isDark,
-            ),
-            const SizedBox(height: 10),
-            _ActivityTile(
-              icon: Icons.receipt_long_rounded,
-              iconBgColor: AppTheme.primaryContainer,
-              iconColor: AppTheme.primary,
-              title: 'Order #1041',
-              subtitle: '1 item · \$12.50',
-              time: '1h ago',
-              isDark: isDark,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          _ActivityTile(
+            icon: Icons.receipt_long_rounded,
+            iconBgColor: AppTheme.primaryContainer,
+            iconColor: AppTheme.primary,
+            title: 'Order #1042',
+            subtitle: '2 items · \$45.00',
+            time: 'Just now',
+            isDark: isDark,
+          ),
+          const SizedBox(height: 10),
+          _ActivityTile(
+            icon: Icons.person_add_rounded,
+            iconBgColor: AppTheme.successSurface,
+            iconColor: AppTheme.success,
+            title: 'Staff Check-in',
+            subtitle: 'Sok Dara arrived',
+            time: '15m ago',
+            isDark: isDark,
+          ),
+          const SizedBox(height: 10),
+          _ActivityTile(
+            icon: Icons.receipt_long_rounded,
+            iconBgColor: AppTheme.primaryContainer,
+            iconColor: AppTheme.primary,
+            title: 'Order #1041',
+            subtitle: '1 item · \$12.50',
+            time: '1h ago',
+            isDark: isDark,
+          ),
+        ],
       ),
     );
   }
 }
 
-// ── Hero Sales Card ────────────────────────────
+// ── Hero Sales Card
 class _HeroSalesCard extends StatelessWidget {
   const _HeroSalesCard({
     required this.isDark,
@@ -222,7 +246,7 @@ class _HeroStat extends StatelessWidget {
   }
 }
 
-// ── Quick Stats Row ────────────────────────────
+// ── Quick Stats Row
 class _QuickStatsRow extends StatelessWidget {
   const _QuickStatsRow({required this.isDark});
   final bool isDark;
@@ -324,7 +348,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ── Staff Status Row ───────────────────────────
+// ── Staff Status Row
 class _StaffStatusRow extends StatelessWidget {
   const _StaffStatusRow({required this.isDark});
   final bool isDark;
@@ -378,7 +402,285 @@ class _StaffStatusChip extends StatelessWidget {
   }
 }
 
-// ── Activity Tile ──────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// ── STAFF (EMPLOYEE) DASHBOARD VIEW
+// ─────────────────────────────────────────────────────────────────────────────
+class _StaffDashboard extends StatelessWidget {
+  const _StaffDashboard({
+    required this.isDark,
+    required this.theme,
+    required this.userName,
+  });
+
+  final bool isDark;
+  final ThemeData theme;
+  final String userName;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardBg = isDark ? AppTheme.darkSurface : AppTheme.lightSurface;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
+    final textSecondary = isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Premium Greeting Card
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppTheme.primary, Color(0xFF1E35A5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primary.withOpacity(0.2),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome back,',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        userName,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.badge_outlined,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+
+          // ── Today's Shift Card
+          const SectionHeader(title: 'Today’s Shift Status'),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.success.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.work_history_outlined,
+                    color: AppTheme.success,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Shift Active',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Clocked in at 08:30 AM',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                StatusBadge(
+                  label: 'ON-SITE',
+                  color: AppTheme.success,
+                  backgroundColor: AppTheme.successSurface,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+
+          // ── Personal Metrics Row
+          Row(
+            children: [
+              Expanded(
+                child: _PersonalStatCard(
+                  title: 'Attendance',
+                  value: '22 Days',
+                  subtitle: 'Present this month',
+                  icon: Icons.calendar_today_rounded,
+                  color: AppTheme.info,
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _PersonalStatCard(
+                  title: 'Est. Earnings',
+                  value: '\$480.00',
+                  subtitle: 'Payday: Jun 30',
+                  icon: Icons.payments_outlined,
+                  color: Colors.deepPurple,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 28),
+
+          // ── Notifications/Pending Updates
+          const SectionHeader(title: 'Recent Notifications'),
+          const SizedBox(height: 12),
+          _ActivityTile(
+            icon: Icons.campaign_rounded,
+            iconBgColor: AppTheme.infoSurface,
+            iconColor: AppTheme.info,
+            title: 'New Policy Update',
+            subtitle: 'New check-in radius updated to 50m.',
+            time: '2h ago',
+            isDark: isDark,
+          ),
+          const SizedBox(height: 10),
+          _ActivityTile(
+            icon: Icons.task_alt_rounded,
+            iconBgColor: AppTheme.successSurface,
+            iconColor: AppTheme.success,
+            title: 'Payslip Available',
+            subtitle: 'Your payslip for May is now ready to view.',
+            time: '1d ago',
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PersonalStatCard extends StatelessWidget {
+  const _PersonalStatCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.isDark,
+  });
+
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cardBg = isDark ? AppTheme.darkSurface : AppTheme.lightSurface;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
+    final textSecondary = isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Icon(icon, color: color, size: 18),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: textSecondary,
+              fontSize: 10.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Activity Tile
 class _ActivityTile extends StatelessWidget {
   const _ActivityTile({
     required this.icon,

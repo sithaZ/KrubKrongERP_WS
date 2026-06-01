@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/router/route_paths.dart';
@@ -8,9 +9,11 @@ import '../../features/auth/domain/entities/user.dart';
 import '../../features/auth/presentation/pages/login_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/staff/presentation/pages/add_staff_screen.dart';
-
 import '../../features/staff/presentation/pages/staff_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_screen.dart';
+import '../../features/product/presentation/pages/product_screen.dart';
+import '../../features/order/presentation/pages/order_screen.dart';
+import '../widgets/placeholder_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -51,10 +54,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           location.startsWith(AppRoutePaths.staffList) ||
           location.startsWith(AppRoutePaths.attendance) ||
           location.startsWith(AppRoutePaths.payroll) ||
-          location.startsWith(AppRoutePaths.settings);
+          location.startsWith(AppRoutePaths.settings) ||
+          location.startsWith(AppRoutePaths.products) ||
+          location.startsWith(AppRoutePaths.suppliers) ||
+          location.startsWith(AppRoutePaths.purchaseOrders) ||
+          location.startsWith(AppRoutePaths.reports) ||
+          location.startsWith(AppRoutePaths.expenses) ||
+          location.startsWith(AppRoutePaths.leaveManagement) ||
+          location.startsWith(AppRoutePaths.notifications) ||
+          location.startsWith(AppRoutePaths.inventory) ||
+          location.startsWith(AppRoutePaths.orders);
           
       final isEmployeeRoute =
-          location.startsWith(AppRoutePaths.employeeShell);
+          location.startsWith(AppRoutePaths.employeeShell) ||
+          location.startsWith(AppRoutePaths.attendance) ||
+          location.startsWith(AppRoutePaths.payroll) ||
+          location.startsWith(AppRoutePaths.notifications) ||
+          location.startsWith(AppRoutePaths.settings) ||
+          location.startsWith(AppRoutePaths.leaveManagement);
 
       if (user.role == UserRole.manager && !isManagerRoute) {
         return AppRoutePaths.managerShell;
@@ -90,6 +107,86 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutePaths.attendance,
         builder: (context, state) => const AttendanceScreen(),
+      ),
+      GoRoute(
+        path: AppRoutePaths.products,
+        builder: (context, state) => const ProductScreen(),
+      ),
+      GoRoute(
+        path: AppRoutePaths.suppliers,
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Supplier Management',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.local_shipping_outlined,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutePaths.purchaseOrders,
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Purchase Orders',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.shopping_cart_checkout_outlined,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutePaths.reports,
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Business Reports',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.analytics_outlined,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutePaths.expenses,
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Expense Management',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.account_balance_wallet_outlined,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutePaths.leaveManagement,
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Leave Management',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.time_to_leave_outlined,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutePaths.notifications,
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Notifications',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.notifications_active_outlined,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutePaths.payroll,
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Payroll Management',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.payments_outlined,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutePaths.settings,
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Settings',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.settings_outlined,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutePaths.inventory,
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Inventory Tracking',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.inventory_2_outlined,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutePaths.orders,
+        builder: (context, state) => const OrderScreen(),
       ),
     ],
   );
