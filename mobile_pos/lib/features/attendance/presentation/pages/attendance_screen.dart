@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../app/router/route_paths.dart';
 import '../../../../core/providers/core_providers.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/errors/failures.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/attendance_provider.dart';
 import '../../data/services/attendance_service.dart';
@@ -87,11 +92,12 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
         );
       }
     } catch (e) {
+      final displayMessage = e is Failure ? e.message : e.toString();
       if (mounted) {
         ModernAlert.show(
           context,
           title: 'Error',
-          message: e.toString(),
+          message: displayMessage,
           icon: Icons.error_outline,
           iconColor: Colors.red,
         );
@@ -135,11 +141,12 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
         );
       }
     } catch (e) {
+      final displayMessage = e is Failure ? e.message : e.toString();
       if (mounted) {
         ModernAlert.show(
           context,
           title: 'Error',
-          message: e.toString(),
+          message: displayMessage,
           icon: Icons.error_outline,
           iconColor: Colors.red,
         );
@@ -257,6 +264,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
+                            onTap: () => context.push(AppRoutePaths.attendanceDetail, extra: record),
                             leading: CircleAvatar(
                               backgroundColor: checkOut == null ? Colors.green.shade100 : Colors.blue.shade100,
                               child: Icon(
@@ -294,159 +302,315 @@ class OwnerAttendanceView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsAsync = ref.watch(shopSettingsProvider);
     final allRecordsAsync = ref.watch(attendanceRecordsProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return settingsAsync.when(
-      data: (settings) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildShopStatusCard(context, settings),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        children: [
-                          const Text('Shop QR Code', style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          QrImageView(
-                            data: settings['secretKey'],
-                            version: QrVersions.auto,
-                            size: 140.0,
-                          ),
-                        ],
+      data: (settings) {
+        final coords = settings['coordinates'];
+        final hasLocation = coords != null && coords['lat'] != null && coords['lng'] != null;
+
+        return Column(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. Premium Shop Location & Settings Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _setShopLocation(context, ref),
-                        icon: const Icon(Icons.my_location),
-                        label: const Text('My GPS'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showLinkInputDialog(context, ref),
-                        icon: const Icon(Icons.link),
-                        label: const Text('Paste Link'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 24),
-                          backgroundColor: Colors.blue.shade700,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Row(
-              children: [
-                Icon(Icons.people, size: 20),
-                SizedBox(width: 8),
-                Text('Staff Attendance Monitor', style: TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: allRecordsAsync.when(
-              data: (records) => RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(attendanceRecordsProvider);
-                  await ref.read(attendanceRecordsProvider.future);
-                },
-                child: records.isEmpty
-                    ? const SingleChildScrollView(
-                        physics: AlwaysScrollableScrollPhysics(),
-                        child: SizedBox(
-                          height: 300,
-                          child: Center(child: Text('No attendance records found')),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: records.length,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final record = records[index];
-                          final checkIn = DateTime.parse(record['checkIn']);
-                          final checkOut = record['checkOut'] != null ? DateTime.parse(record['checkOut']) : null;
-                          final employeeName = record['employeeId']?['fullName'] ?? 'Staff';
-                          
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                child: Text(employeeName.substring(0, 1).toUpperCase()),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              title: Text(employeeName),
-                              subtitle: Text(
-                                'In: ${DateFormat('hh:mm a').format(checkIn)}' +
-                                (checkOut != null ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}' : ' - On-Site'),
-                              ),
-                              trailing: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                              child: Icon(Icons.storefront_rounded, color: AppTheme.primary, size: 24),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(DateFormat('MMM d').format(checkIn), style: const TextStyle(fontSize: 12)),
-                                  if (record['workedHours'] != null)
-                                    Text('${record['workedHours'].toStringAsFixed(1)}h', 
-                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                                  Text(
+                                    settings['shopName'] ?? 'Shop Profile',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Allowed Radius: ${settings['radius'] ?? 50}m',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                          );
-                        },
-                      ),
-              ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-            ),
-          ),
-        ],
-      ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text(e.toString())),
-    );
-  }
+                            StatusBadge(
+                              label: hasLocation ? 'GPS Pinned' : 'No GPS Set',
+                              color: hasLocation ? AppTheme.success : AppTheme.warning,
+                            ),
+                          ],
+                        ),
+                        if (hasLocation) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white.withOpacity(0.04) : AppTheme.lightFill,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.location_on, color: Colors.redAccent, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Coordinates: ${coords['lat'].toStringAsFixed(5)}, ${coords['lng'].toStringAsFixed(5)}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+                        Text(
+                          'Configure Shop GPS Coordinates',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () => _setShopLocation(context, ref),
+                                icon: const Icon(Icons.my_location_rounded, size: 16),
+                                label: const Text('Pin Current GPS'),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  backgroundColor: AppTheme.primary,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _showLinkInputDialog(context, ref),
+                                icon: const Icon(Icons.map_rounded, size: 16),
+                                label: const Text('Paste Maps Link'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
 
-  Widget _buildShopStatusCard(BuildContext context, Map<String, dynamic> settings) {
-    final coords = settings['coordinates'];
-    return Card(
-      color: Colors.blue.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const Icon(Icons.store, size: 40, color: Colors.blue),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(settings['shopName'] ?? 'My Shop', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text('Radius: ${settings['radius']}m', style: const TextStyle(color: Colors.grey)),
-                  if (coords != null)
-                    Text('Location: ${coords['lat'].toStringAsFixed(4)}, ${coords['lng'].toStringAsFixed(4)}', 
-                        style: const TextStyle(fontSize: 12, color: Colors.blue)),
+                  const SizedBox(height: 16),
+
+                  // 2. Interactive QR Code Card for Clock-in Scanning
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Left side instructions
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Check-in QR Code',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Have your employees scan this unique shop QR code using their KrubKrong app when they arrive at the shop to check in instantly.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Right side QR (Interactive Modal Trigger)
+                        GestureDetector(
+                          onTap: () => _showExpandedQrDialog(
+                            context,
+                            settings['secretKey'] ?? 'KrubKrongERP',
+                            settings['shopName'] ?? 'Default Shop',
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade200),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                            child: Tooltip(
+                              message: 'Tap to enlarge',
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  QrImageView(
+                                    data: settings['secretKey'] ?? 'KrubKrongERP',
+                                    version: QrVersions.auto,
+                                    size: 110.0,
+                                  ),
+                                  Positioned(
+                                    bottom: 2,
+                                    right: 2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: const BoxDecoration(
+                                        color: AppTheme.primary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.fullscreen_rounded,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
+            const Divider(),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.people_outline, size: 20),
+                  SizedBox(width: 8),
+                  Text('Staff Attendance Monitor', style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: allRecordsAsync.when(
+                data: (records) => RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(attendanceRecordsProvider);
+                    await ref.read(attendanceRecordsProvider.future);
+                  },
+                  child: records.isEmpty
+                      ? const SingleChildScrollView(
+                          physics: AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height: 250,
+                            child: Center(child: Text('No attendance records found today')),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: records.length,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            final record = records[index];
+                            final checkIn = DateTime.parse(record['checkIn']);
+                            final checkOut = record['checkOut'] != null ? DateTime.parse(record['checkOut']) : null;
+                            final employeeName = record['employeeId']?['fullName'] ?? 'Staff';
+                            
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                onTap: () => context.push(AppRoutePaths.attendanceDetail, extra: record),
+                                leading: CircleAvatar(
+                                  child: Text(employeeName.substring(0, 1).toUpperCase()),
+                                ),
+                                title: Text(employeeName),
+                                subtitle: Text(
+                                  'In: ${DateFormat('hh:mm a').format(checkIn)}' +
+                                  (checkOut != null ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}' : ' - On-Site'),
+                                ),
+                                trailing: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(DateFormat('MMM d').format(checkIn), style: const TextStyle(fontSize: 12)),
+                                    if (record['workedHours'] != null)
+                                      Text('${record['workedHours'].toStringAsFixed(1)}h', 
+                                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+              ),
+            ),
           ],
-        ),
-      ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text(e.toString())),
     );
   }
 
@@ -637,5 +801,123 @@ class OwnerAttendanceView extends ConsumerWidget {
         );
       }
     }
+  }
+
+  void _showExpandedQrDialog(BuildContext context, String secretKey, String shopName) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss QR',
+      barrierColor: Colors.black.withOpacity(0.65),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+              child: ScaleTransition(
+                scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 32),
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  shopName,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  'Employee Clock-in Scanner',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close_rounded, color: Colors.black54),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.grey.shade100,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade100),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: QrImageView(
+                          data: secretKey,
+                          version: QrVersions.auto,
+                          size: 260.0,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Scan QR to Clock In',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Place your mobile scanner close to this QR code',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

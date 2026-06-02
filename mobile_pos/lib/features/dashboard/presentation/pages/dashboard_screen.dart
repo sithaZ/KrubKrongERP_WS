@@ -25,19 +25,6 @@ class DashboardScreen extends ConsumerWidget {
       backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
       appBar: AppBar(
         title: const Text('Dashboard'),
-        actions: [
-          GestureDetector(
-            onTap: () => ProfileBottomSheet.show(context),
-            child: Container(
-              margin: const EdgeInsets.only(right: 16),
-              child: CircleAvatar(
-                radius: 17,
-                backgroundColor: AppTheme.primaryContainer,
-                child: Icon(Icons.person_rounded, size: 18, color: AppTheme.primary),
-              ),
-            ),
-          ),
-        ],
       ),
       body: isStaff
           ? _StaffDashboard(isDark: isDark, theme: theme, userName: user?.displayName ?? 'Staff')

@@ -114,4 +114,21 @@ class AttendanceService {
       throw ServerFailure(message: e.response?.data['message'] ?? 'Failed to get records');
     }
   }
+
+  Future<void> updateAttendance(String id, Map<String, dynamic> data) async {
+    try {
+      await _client.patch('/attendance/$id', data: data);
+    } on DioException catch (e) {
+      throw ServerFailure(message: e.response?.data['message'] ?? 'Failed to update record');
+    }
+  }
+
+  Future<List<dynamic>> getAllShifts() async {
+    try {
+      final response = await _client.get('/attendance/shifts');
+      return response.data as List;
+    } on DioException catch (e) {
+      throw ServerFailure(message: e.response?.data['message'] ?? 'Failed to get shifts');
+    }
+  }
 }

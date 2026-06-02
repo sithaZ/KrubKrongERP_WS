@@ -23,6 +23,9 @@ abstract class AuthRepository {
   /// Logout user and clear session
   Future<Either<Failure, void>> logout();
 
+  /// Update user profile details
+  Future<Either<Failure, User>> updateProfile({String? name, String? phone, String? password, String? currentPassword});
+
   /// Check if user is authenticated
   Future<bool> isAuthenticated();
 

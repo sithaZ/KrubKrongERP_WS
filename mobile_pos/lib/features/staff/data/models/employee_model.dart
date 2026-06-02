@@ -15,6 +15,7 @@ class EmployeeModel {
     this.phone,
     this.isActive = true,
     this.hireDate,
+    this.shiftId,
   });
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +35,10 @@ class EmployeeModel {
       phone: json['phone'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       hireDate: json['hireDate'] != null ? DateTime.tryParse(json['hireDate'] as String) : null,
+      shiftId: json['shiftId'] is Map
+          ? (json['shiftId'] as Map<String, dynamic>)['id'] as String? ??
+            (json['shiftId'] as Map<String, dynamic>)['_id'] as String?
+          : json['shiftId'] as String?,
     );
   }
 
@@ -49,6 +54,7 @@ class EmployeeModel {
   final String? phone;
   final bool isActive;
   final DateTime? hireDate;
+  final String? shiftId;
 
   Employee toEntity() {
     return Employee(
@@ -64,6 +70,7 @@ class EmployeeModel {
       phone: phone,
       isActive: isActive,
       hireDate: hireDate,
+      shiftId: shiftId,
     );
   }
 
@@ -78,6 +85,7 @@ class EmployeeModel {
       'phone': phone,
       'isActive': isActive,
       'hireDate': hireDate?.toIso8601String(),
+      'shiftId': shiftId,
     };
   }
 }

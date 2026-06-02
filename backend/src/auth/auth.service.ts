@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -134,6 +134,45 @@ export class AuthService {
       isActive: user.isActive,
       companyId: user.companyId ? user.companyId.toString() : null,
       shopId: user.companyId ? user.companyId.toString() : null,
+    };
+  }
+
+  async updateProfile(userId: string, dto: { name?: string; phone?: string; password?: string; currentPassword?: string }) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updates: any = {};
+    if (dto.name) updates.name = dto.name;
+    if (dto.phone !== undefined) updates.phone = dto.phone;
+
+    if (dto.password) {
+      if (!dto.currentPassword) {
+        throw new BadRequestException('Current password is required to set a new password');
+      }
+
+      const isMatch = await bcrypt.compare(dto.currentPassword, user.password);
+      if (!isMatch) {
+        throw new UnauthorizedException('Incorrect current password');
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      updates.password = await bcrypt.hash(dto.password, salt);
+    }
+
+    const updatedUser = await this.usersService.updateEmployeeAccount(userId, updates);
+
+    return {
+      id: updatedUser._id.toString(),
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      avatar: updatedUser.avatar || null,
+      phone: updatedUser.phone || null,
+      isActive: updatedUser.isActive,
+      companyId: updatedUser.companyId ? updatedUser.companyId.toString() : null,
+      shopId: updatedUser.companyId ? updatedUser.companyId.toString() : null,
     };
   }
 }

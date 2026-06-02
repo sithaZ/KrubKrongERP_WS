@@ -15,6 +15,7 @@ class Employee extends Equatable {
     this.phone,
     this.isActive = true,
     this.hireDate,
+    this.shiftId,
   });
 
   final String id;
@@ -29,6 +30,7 @@ class Employee extends Equatable {
   final String? phone;
   final bool isActive;
   final DateTime? hireDate;
+  final String? shiftId;
 
   @override
   List<Object?> get props => [
@@ -44,6 +46,7 @@ class Employee extends Equatable {
         phone,
         isActive,
         hireDate,
+        shiftId,
       ];
 
   Employee copyWith({
@@ -59,6 +62,7 @@ class Employee extends Equatable {
     String? phone,
     bool? isActive,
     DateTime? hireDate,
+    String? shiftId,
   }) {
     return Employee(
       id: id ?? this.id,
@@ -73,6 +77,7 @@ class Employee extends Equatable {
       phone: phone ?? this.phone,
       isActive: isActive ?? this.isActive,
       hireDate: hireDate ?? this.hireDate,
+      shiftId: shiftId ?? this.shiftId,
     );
   }
 }

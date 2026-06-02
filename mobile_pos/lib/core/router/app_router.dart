@@ -11,6 +11,7 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/staff/presentation/pages/add_staff_screen.dart';
 import '../../features/staff/presentation/pages/staff_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_screen.dart';
+import '../../features/attendance/presentation/pages/attendance_detail_screen.dart';
 import '../../features/product/presentation/pages/product_screen.dart';
 import '../../features/order/presentation/pages/order_screen.dart';
 import '../widgets/placeholder_screen.dart';
@@ -107,6 +108,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutePaths.attendance,
         builder: (context, state) => const AttendanceScreen(),
+      ),
+      GoRoute(
+        path: AppRoutePaths.attendanceDetail,
+        builder: (context, state) {
+          final record = state.extra as Map<String, dynamic>;
+          return AttendanceDetailScreen(record: record);
+        },
       ),
       GoRoute(
         path: AppRoutePaths.products,

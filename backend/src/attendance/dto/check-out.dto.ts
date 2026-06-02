@@ -1,8 +1,13 @@
 import { IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class CheckOutDto {
+  @IsOptional()
   @IsMongoId()
-  employeeId: string;
+  employeeId?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  staffId?: string;
 
   @IsOptional()
   @IsString()

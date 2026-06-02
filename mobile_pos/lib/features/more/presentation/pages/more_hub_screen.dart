@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../profile/presentation/widgets/profile_bottom_sheet.dart';
 import '../../../../core/widgets/common_widgets.dart';
 
 class MoreHubScreen extends ConsumerWidget {
@@ -128,10 +129,16 @@ class MoreHubScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('More'),
         actions: [
-          IconButton(
-            onPressed: () => _showLogoutDialog(context, ref),
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Logout',
+          GestureDetector(
+            onTap: () => ProfileBottomSheet.show(context),
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              child: const CircleAvatar(
+                radius: 17,
+                backgroundColor: AppTheme.primaryContainer,
+                child: Icon(Icons.person_rounded, size: 18, color: AppTheme.primary),
+              ),
+            ),
           ),
         ],
       ),
@@ -259,38 +266,8 @@ class MoreHubScreen extends ConsumerWidget {
               },
             ),
           ),
-          const SizedBox(height: 36),
-
-          // Sign Out Button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _showLogoutDialog(context, ref),
-              icon: const Icon(Icons.logout_rounded, size: 18),
-              label: const Text('Sign Out'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                side: BorderSide(color: theme.colorScheme.error.withOpacity(0.4)),
-                foregroundColor: theme.colorScheme.error,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
         ],
       ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
-    ModernAlert.show(
-      context,
-      title: 'Sign Out',
-      message: 'Are you sure you want to sign out of your account?',
-      icon: Icons.logout_rounded,
-      iconColor: AppTheme.error,
-      confirmLabel: 'Sign Out',
-      cancelLabel: 'Cancel',
-      onConfirm: () => ref.read(authProvider.notifier).logout(),
     );
   }
 }

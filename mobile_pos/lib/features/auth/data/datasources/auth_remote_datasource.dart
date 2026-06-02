@@ -14,6 +14,7 @@ abstract class AuthRemoteDataSource {
   Future<UserModel> getCurrentUser();
   Future<AuthTokensModel> refreshToken(String refreshToken);
   Future<void> logout();
+  Future<UserModel> updateProfile({String? name, String? phone, String? password, String? currentPassword});
 }
 
 /// REST API implementation of auth remote data source
@@ -120,6 +121,32 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     await _secureStorage.delete(AppConstants.userRoleKey);
     await _secureStorage.delete(AppConstants.companyIdKey);
     await _secureStorage.delete(AppConstants.userDataKey);
+  }
+
+  @override
+  Future<UserModel> updateProfile({String? name, String? phone, String? password, String? currentPassword}) async {
+    try {
+      final response = await _client.put(
+        '/auth/profile',
+        data: {
+          if (name != null) 'name': name,
+          if (phone != null) 'phone': phone,
+          if (password != null && password.isNotEmpty) 'password': password,
+          if (currentPassword != null && currentPassword.isNotEmpty) 'currentPassword': currentPassword,
+        },
+      );
+
+      final data = response.data as Map<String, dynamic>?;
+      if (data == null) {
+        throw app_errors.ServerException('Failed to update profile');
+      }
+
+      return UserModel.fromJson(data);
+    } on app_errors.ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      throw _handleDioException(e);
+    }
   }
 
   /// Convert DioException to appropriate exception

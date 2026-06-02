@@ -38,6 +38,9 @@ export class Employee extends Document {
 
   @Prop()
   hireDate?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'Shift', required: false })
+  shiftId?: Types.ObjectId;
 }
 
 export const EmployeeSchema = SchemaFactory.createForClass(Employee);

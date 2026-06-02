@@ -18,4 +18,5 @@ abstract class AppRoutePaths {
   static const notifications = '/notifications';
   static const inventory = '/inventory';
   static const orders = '/orders';
+  static const attendanceDetail = '/attendance/detail';
 }

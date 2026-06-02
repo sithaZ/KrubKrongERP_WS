@@ -59,6 +59,19 @@ class StaffNotifier extends StateNotifier<StaffState> {
       (_) => state = state.copyWith(isLoading: false, error: null),
     );
   }
+
+  Future<void> updateEmployee(Employee employee, Function() onSuccess) async {
+    state = state.copyWith(isLoading: true);
+    final result = await _repository.updateEmployee(employee);
+    
+    result.fold(
+      (failure) => state = state.copyWith(isLoading: false, error: failure.message),
+      (_) {
+        state = state.copyWith(isLoading: false, error: null);
+        onSuccess();
+      },
+    );
+  }
 }
 
 class StaffState {

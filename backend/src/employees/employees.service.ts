@@ -245,13 +245,15 @@ export class EmployeesService {
 
       try {
         const staffName = createEmployeeDto.fullName;
+        const positionName = createEmployeeDto.position?.trim().toLowerCase();
+        const userRole = positionName === 'manager' ? Role.MANAGER : Role.EMPLOYEE;
 
         createdUser = await this.usersService.createEmployeeAccount({
           username,
           name: staffName,
           email: normalizedEmail,
           password: hashedPassword,
-          role: Role.EMPLOYEE,
+          role: userRole,
           companyId,
           isActive: createEmployeeDto.isActive ?? true,
           phone: createEmployeeDto.phone,
@@ -425,6 +427,11 @@ export class EmployeesService {
 
       if (typeof updateEmployeeDto.isActive === 'boolean') {
         userUpdatePayload.isActive = updateEmployeeDto.isActive;
+      }
+
+      if (updateEmployeeDto.position) {
+        const positionName = updateEmployeeDto.position.trim().toLowerCase();
+        userUpdatePayload.role = positionName === 'manager' ? Role.MANAGER : Role.EMPLOYEE;
       }
 
       userUpdatePayload.companyId = updatePayload.companyId;

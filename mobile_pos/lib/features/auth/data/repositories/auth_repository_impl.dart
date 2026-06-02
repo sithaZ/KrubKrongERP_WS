@@ -242,6 +242,47 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<app_errors.Failure, User>> updateProfile({
+    String? name,
+    String? phone,
+    String? password,
+    String? currentPassword,
+  }) async {
+    try {
+      final user = await _remoteDataSource.updateProfile(
+        name: name,
+        phone: phone,
+        password: password,
+        currentPassword: currentPassword,
+      );
+
+      await _localDataSource.cacheUser(user);
+      return right(user.toEntity());
+    } on app_errors.NetworkException catch (e, stackTrace) {
+      return left(app_errors.NetworkFailure(
+        message: e.message,
+        stackTrace: stackTrace,
+      ));
+    } on app_errors.AuthException catch (e, stackTrace) {
+      return left(app_errors.AuthFailure(
+        message: e.message,
+        stackTrace: stackTrace,
+      ));
+    } on app_errors.ServerException catch (e, stackTrace) {
+      return left(app_errors.ServerFailure(
+        message: e.message,
+        code: e.statusCode?.toString(),
+        stackTrace: stackTrace,
+      ));
+    } catch (e, stackTrace) {
+      return left(app_errors.UnknownFailure(
+        message: e.toString(),
+        stackTrace: stackTrace,
+      ));
+    }
+  }
+
+  @override
   Future<bool> isAuthenticated() async {
     final token = await _localDataSource.getAccessToken();
     return token != null && token.isNotEmpty;
