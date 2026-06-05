@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -11,100 +12,148 @@ class ProfileScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
       appBar: AppBar(
-        title: const Text('User Profile'),
+        title: const Text('Profile'),
         actions: [
           IconButton(
             onPressed: () => _showLogoutDialog(context, ref),
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout_rounded),
             tooltip: 'Logout',
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 20),
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: colorScheme.primaryContainer,
-                    child: Text(
-                      user?.initials ?? 'U',
-                      style: theme.textTheme.displayMedium?.copyWith(
-                        color: colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+            // ── Profile Hero Section ─────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        shape: BoxShape.circle,
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Avatar
+                  Stack(
+                    children: [
+                      Container(
+                        width: 88,
+                        height: 88,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [AppTheme.primary, Color(0xFF1A3BA0)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primary.withOpacity(0.25),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            user?.initials ?? 'U',
+                            style: theme.textTheme.headlineLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
                       ),
-                      child: const Icon(Icons.edit, color: Colors.white, size: 20),
-                    ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    user?.name ?? 'User Name',
+                    style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 6),
+                  StatusBadge(
+                    label: user?.roleLabel ?? 'ROLE',
+                    color: AppTheme.primary,
+                    backgroundColor: AppTheme.primaryContainer,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              user?.name ?? 'User Name',
-              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                user?.roleLabel ?? 'ROLE',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSecondaryContainer,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
-            _buildProfileItem(
-              context,
-              icon: Icons.email_outlined,
-              label: 'Email',
-              value: user?.email ?? 'N/A',
-            ),
-            const SizedBox(height: 16),
-            _buildProfileItem(
-              context,
-              icon: Icons.phone_outlined,
-              label: 'Phone',
-              value: user?.phone ?? 'N/A',
-            ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _showLogoutDialog(context, ref),
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: colorScheme.error),
-                  foregroundColor: colorScheme.error,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+
+            // ── Info Items ───────────────────────────
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Account Information',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Info card group
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        _InfoRow(
+                          icon: Icons.email_outlined,
+                          label: 'Email',
+                          value: user?.email ?? 'N/A',
+                          isDark: isDark,
+                          showDivider: true,
+                        ),
+                        _InfoRow(
+                          icon: Icons.phone_outlined,
+                          label: 'Phone',
+                          value: user?.phone ?? 'N/A',
+                          isDark: isDark,
+                          showDivider: false,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 36),
+
+                  // Danger Zone
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showLogoutDialog(context, ref),
+                      icon: const Icon(Icons.logout_rounded, size: 18),
+                      label: const Text('Sign Out'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        side: BorderSide(color: colorScheme.error.withOpacity(0.5)),
+                        foregroundColor: colorScheme.error,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -113,57 +162,80 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: colorScheme.primary),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     ModernAlert.show(
       context,
-      title: 'Logout',
-      message: 'Are you sure you want to log out of your account?',
-      icon: Icons.logout,
-      iconColor: Colors.redAccent,
-      confirmLabel: 'Logout',
-      onConfirm: () {
-        ref.read(authProvider.notifier).logout();
-      },
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out of your account?',
+      icon: Icons.logout_rounded,
+      iconColor: AppTheme.error,
+      confirmLabel: 'Sign Out',
+      cancelLabel: 'Cancel',
+      onConfirm: () => ref.read(authProvider.notifier).logout(),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.isDark,
+    required this.showDivider,
+  });
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isDark;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 17, color: AppTheme.primary),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            indent: 66,
+            color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
+          ),
+      ],
     );
   }
 }
