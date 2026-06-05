@@ -12,7 +12,6 @@ import '../../features/staff/presentation/pages/add_staff_screen.dart';
 import '../../features/staff/presentation/pages/staff_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_detail_screen.dart';
-import '../../features/product/presentation/pages/product_screen.dart';
 import '../../features/order/presentation/pages/order_screen.dart';
 import '../widgets/placeholder_screen.dart';
 
@@ -118,7 +117,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutePaths.products,
-        builder: (context, state) => const ProductScreen(),
+        builder: (context, state) => const ErpPlaceholderScreen(
+          title: 'Product Catalog',
+          description: 'This feature will be available in a future release.',
+          icon: Icons.shopping_bag_outlined,
+        ),
       ),
       GoRoute(
         path: AppRoutePaths.suppliers,
