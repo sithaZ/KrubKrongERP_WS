@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Order } from '../orders/order.entity';
-import { Product } from '../products/product.entity';
 import { Employee } from '../employees/employee.entity';
 import { User } from '../users/user.entity';
 import { Company } from '../companies/company.entity';
@@ -12,7 +11,6 @@ import { Role } from '../common/enums/role.enum';
 export class DashboardService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<Order>,
-    @InjectModel(Product.name) private productModel: Model<Product>,
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Company.name) private companyModel: Model<Company>,
@@ -104,25 +102,6 @@ export class DashboardService {
     ]);
 
     return salesData;
-  }
-
-  async getTopProducts(limit: number = 10) {
-    const topProducts = await this.orderModel.aggregate([
-      { $match: { status: 'completed' } },
-      { $unwind: '$items' },
-      {
-        $group: {
-          _id: '$items.productId',
-          productName: { $first: '$items.productName' },
-          totalQuantity: { $sum: '$items.quantity' },
-          totalRevenue: { $sum: '$items.total' },
-        },
-      },
-      { $sort: { totalQuantity: -1 } },
-      { $limit: limit },
-    ]);
-
-    return topProducts;
   }
 
   async getRevenueData(dateFrom?: string, dateTo?: string) {

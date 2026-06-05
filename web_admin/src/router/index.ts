@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import HomeView from '../views/HomeView.vue'
 import DashboardView from '../views/DashboardView.vue'
-import CatalogView from '../views/CatalogView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import SubscriptionsView from '../views/SubscriptionsView.vue'
 import ShopsView from '../views/ShopsView.vue'
@@ -47,12 +46,6 @@ const router = createRouter({
           path: 'subscriptions',
           name: 'subscriptions',
           component: SubscriptionsView,
-        },
-        {
-          
-          path: 'catalog',
-          name: 'catalog',
-          component: CatalogView
         },
         {
           

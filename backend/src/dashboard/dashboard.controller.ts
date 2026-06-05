@@ -25,12 +25,6 @@ export class DashboardController {
     return this.dashboardService.getSalesData(dateFrom, dateTo);
   }
 
-  @Get('top-products')
-  @Roles(Role.ADMIN)
-  getTopProducts(@Query('limit') limit: string = '10') {
-    return this.dashboardService.getTopProducts(parseInt(limit));
-  }
-
   @Get('revenue')
   @Roles(Role.ADMIN)
   getRevenueData(
