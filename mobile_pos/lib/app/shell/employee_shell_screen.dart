@@ -5,6 +5,8 @@ import '../../features/pos/presentation/pages/pos_screen.dart';
 import '../../features/more/presentation/pages/more_hub_screen.dart';
 import '../../core/theme/app_theme.dart';
 
+import '../../features/attendance/presentation/widgets/global_scanner_wrapper.dart';
+
 class EmployeeShellScreen extends ConsumerStatefulWidget {
   const EmployeeShellScreen({super.key});
 
@@ -25,11 +27,12 @@ class _EmployeeShellScreenState extends ConsumerState<EmployeeShellScreen> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: pages,
-      ),
+    return GlobalScannerWrapper(
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: pages,
+        ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
@@ -66,6 +69,6 @@ class _EmployeeShellScreenState extends ConsumerState<EmployeeShellScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

@@ -19,6 +19,7 @@ import '../providers/attendance_provider.dart';
 import '../../data/services/attendance_service.dart';
 import '../../../staff/domain/entities/employee.dart';
 import '../../../staff/presentation/providers/staff_provider.dart';
+import '../widgets/beauty_scanner_widget.dart';
 
 class AttendanceScreen extends ConsumerWidget {
   const AttendanceScreen({
@@ -363,70 +364,63 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                 error: (_, __) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 16),
-              if (_isScanning)
-                SizedBox(
-                  height: 250,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: MobileScanner(
-                      onDetect: (capture) {
-                        final List<Barcode> barcodes = capture.barcodes;
-                        for (final barcode in barcodes) {
-                          if (barcode.rawValue != null) {
-                            _handleScan(barcode.rawValue!);
-                            break;
-                          }
-                        }
-                      },
-                    ),
-                  ),
-                )
-              else
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => setState(() => _isScanning = true),
-                            icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
-                            label: const Text('Scan QR'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _handleCheckOut,
-                            icon: const Icon(Icons.logout_rounded, size: 18),
-                            label: const Text('Check Out'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_selfAttendanceAllowed) ...[
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
+              Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: _handleSelfCheckIn,
-                          icon: const Icon(Icons.fingerprint_rounded, size: 20),
-                          label: const Text('Self Clock In (GPS Only)'),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => Scaffold(
+                                  backgroundColor: Colors.black,
+                                  body: BeautyScannerWidget(
+                                    onClose: () => Navigator.pop(context),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+                          label: const Text('Scan QR'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal,
-                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _handleCheckOut,
+                          icon: const Icon(Icons.logout_rounded, size: 18),
+                          label: const Text('Check Out'),
+                          style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                       ),
                     ],
+                  ),
+                  if (_selfAttendanceAllowed) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _handleSelfCheckIn,
+                        icon: const Icon(Icons.fingerprint_rounded, size: 20),
+                        label: const Text('Self Clock In (GPS Only)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
                   ],
-                ),
+                ],
+              ),
               if (_isLoading) ...[
                 const SizedBox(height: 16),
                 const Center(child: CircularProgressIndicator()),
