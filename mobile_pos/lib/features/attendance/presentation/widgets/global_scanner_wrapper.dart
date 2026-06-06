@@ -97,47 +97,19 @@ class _GlobalScannerWrapperState extends State<GlobalScannerWrapper>
                 },
                 onTap: _openScanner,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.black87 : Colors.white.withOpacity(0.95),
+                    color: isDark ? Colors.black54 : Colors.white.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: AppTheme.primary.withOpacity(0.35),
-                      width: 1,
+                      color: isDark ? Colors.white12 : Colors.black12,
+                      width: 0.8,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.qr_code_scanner_rounded,
-                        size: 14,
-                        color: AppTheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Pull to Scan',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white70 : Colors.black87,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 14,
-                        color: isDark ? Colors.white54 : Colors.black54,
-                      ),
-                    ],
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: isDark ? Colors.white70 : Colors.black54,
                   ),
                 ),
               ),

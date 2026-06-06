@@ -7,6 +7,7 @@ import '../../features/more/presentation/pages/more_hub_screen.dart';
 import '../../core/theme/app_theme.dart';
 
 import '../../features/attendance/presentation/widgets/global_scanner_wrapper.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
 class ManagerShellScreen extends ConsumerStatefulWidget {
   const ManagerShellScreen({super.key});
@@ -28,13 +29,15 @@ class _ManagerShellScreenState extends ConsumerState<ManagerShellScreen> {
     ];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    final isOwnerOrAdmin = user?.isOwnerOrAdmin ?? false;
 
-    return GlobalScannerWrapper(
-      child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: pages,
-        ),
+    final scaffoldContent = Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: pages,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
@@ -76,6 +79,14 @@ class _ManagerShellScreenState extends ConsumerState<ManagerShellScreen> {
           ],
         ),
       ),
-    ));
+    );
+
+    if (isOwnerOrAdmin) {
+      return scaffoldContent;
+    }
+
+    return GlobalScannerWrapper(
+      child: scaffoldContent,
+    );
   }
 }
