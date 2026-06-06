@@ -13,6 +13,7 @@ import '../../features/staff/presentation/pages/staff_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_detail_screen.dart';
 import '../../features/order/presentation/pages/order_screen.dart';
+import '../../features/settings/presentation/pages/settings_screen.dart';
 import '../widgets/placeholder_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -181,11 +182,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutePaths.settings,
-        builder: (context, state) => const ErpPlaceholderScreen(
-          title: 'Settings',
-          description: 'This feature will be available in a future release.',
-          icon: Icons.settings_outlined,
-        ),
+        builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
         path: AppRoutePaths.inventory,

@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import {
   BadRequestException,
   ForbiddenException,
@@ -204,17 +205,109 @@ export class AttendanceService {
     const settings = await this.getShopSettings();
     let locationStatus: 'on_site' | 'remote' | 'unknown' = 'unknown';
 
-    if (settings) {
-      if (dto.qrToken && dto.qrToken !== settings.secretKey) {
-        throw new BadRequestException('The scanned QR code is invalid. Please make sure you scan the official shop QR code!');
+    if (dto.selfCheckIn) {
+      // ── SELF-ATTENDANCE FLOW ──
+      // Validate that the owner has enabled self-attendance for this role
+      const normalizedRole = this.getNormalizedRole(currentUser);
+      const isManagerRole = normalizedRole === Role.MANAGER;
+      const isStaffRole = normalizedRole === Role.EMPLOYEE;
+
+      if (isManagerRole && !settings?.allowManagerSelfAttendance) {
+        throw new ForbiddenException('Self-attendance is not enabled for managers. Please ask the shop owner to enable it in Settings.');
+      }
+      if (isStaffRole && !settings?.allowStaffSelfAttendance) {
+        throw new ForbiddenException('Self-attendance is not enabled for staff. Please ask the shop owner to enable it in Settings.');
       }
 
-      if (dto.lat && dto.lng) {
+      // GPS location is STILL required for self-attendance
+      if (!dto.lat || !dto.lng) {
+        throw new BadRequestException('GPS location is required for self-attendance. Please enable location services.');
+      }
+
+      if (settings) {
         const distance = this.calculateDistance(dto.lat, dto.lng, settings.coordinates.lat, settings.coordinates.lng);
         if (distance > settings.radius) {
           throw new BadRequestException(`You are currently too far from the shop (${Math.round(distance)}m). Please move closer (within ${settings.radius}m) to check in!`);
         }
         locationStatus = 'on_site';
+      }
+    } else {
+      // ── STANDARD QR-BASED FLOW ──
+      if (settings) {
+        if (dto.qrToken) {
+          // 1. Fallback check for the raw secretKey
+          const isLegacy = dto.qrToken === settings.secretKey;
+          let isValid = isLegacy;
+
+          // 2. Check if it's the timestamp-embedded token (format: hash|timestamp)
+          if (!isValid && dto.qrToken.includes('|')) {
+            const parts = dto.qrToken.split('|');
+            if (parts.length === 2) {
+              const clientHash = parts[0];
+              const clientTimestamp = parseInt(parts[1], 10);
+              
+              if (!isNaN(clientTimestamp)) {
+                const nowSeconds = Math.floor(Date.now() / 1000);
+                const age = nowSeconds - clientTimestamp;
+                
+                // Allow a window of 35 seconds (to account for transmission/scanning time)
+                // and up to 15 seconds ahead (in case of client clock skew)
+                if (age >= -15 && age <= 35) {
+                  const expected = crypto
+                    .createHash('sha256')
+                    .update(`${settings.secretKey}:${clientTimestamp}`)
+                    .digest('hex');
+                  
+                  if (clientHash === expected) {
+                    isValid = true;
+                  }
+                }
+              }
+            }
+          }
+
+          // 3. Fallback to standard timeBlock-based TOTP hash (for absolute rotation compatibility)
+          if (!isValid) {
+            const timeBlock = Math.floor(Date.now() / 1000 / 30);
+            
+            const expectedCurrent = crypto
+              .createHash('sha256')
+              .update(`${settings.secretKey}:${timeBlock}`)
+              .digest('hex');
+
+            const expectedPrev = crypto
+              .createHash('sha256')
+              .update(`${settings.secretKey}:${timeBlock - 1}`)
+              .digest('hex');
+
+            const expectedNext = crypto
+              .createHash('sha256')
+              .update(`${settings.secretKey}:${timeBlock + 1}`)
+              .digest('hex');
+
+            if (
+              dto.qrToken === expectedCurrent ||
+              dto.qrToken === expectedPrev ||
+              dto.qrToken === expectedNext
+            ) {
+              isValid = true;
+            }
+          }
+
+          if (!isValid) {
+            throw new BadRequestException('The scanned QR code is expired or invalid. Please scan the newly generated QR code!');
+          }
+        } else {
+          throw new BadRequestException('QR token is required for standard check in');
+        }
+
+        if (dto.lat && dto.lng) {
+          const distance = this.calculateDistance(dto.lat, dto.lng, settings.coordinates.lat, settings.coordinates.lng);
+          if (distance > settings.radius) {
+            throw new BadRequestException(`You are currently too far from the shop (${Math.round(distance)}m). Please move closer (within ${settings.radius}m) to check in!`);
+          }
+          locationStatus = 'on_site';
+        }
       }
     }
 
@@ -272,7 +365,7 @@ export class AttendanceService {
       attendanceStatus,
       lateMinutes,
       note: dto.note ?? '',
-      source: dto.qrToken ? 'qr' : 'mobile',
+      source: dto.selfCheckIn ? 'mobile' : (dto.qrToken ? 'qr' : 'mobile'),
     });
 
     return attendance.save();

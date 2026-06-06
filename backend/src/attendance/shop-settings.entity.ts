@@ -20,6 +20,12 @@ export class ShopSettings extends Document {
 
   @Prop({ required: true })
   ownerId: string;
+
+  @Prop({ default: false })
+  allowManagerSelfAttendance: boolean;
+
+  @Prop({ default: false })
+  allowStaffSelfAttendance: boolean;
 }
 
 export const ShopSettingsSchema = SchemaFactory.createForClass(ShopSettings);

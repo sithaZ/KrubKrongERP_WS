@@ -1,4 +1,4 @@
-import { IsMongoId, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class CheckInDto {
   @IsOptional()
@@ -22,4 +22,8 @@ export class CheckInDto {
   @IsOptional()
   @IsString()
   qrToken?: string;
-}
+
+  @IsOptional()
+  @IsBoolean()
+  selfCheckIn?: boolean;
+}

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' show ImageFilter;
+import 'dart:async';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -56,6 +59,35 @@ class StaffAttendanceView extends ConsumerStatefulWidget {
 class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
   bool _isScanning = false;
   bool _isLoading = false;
+  bool _selfAttendanceAllowed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSelfAttendancePermission();
+  }
+
+  Future<void> _loadSelfAttendancePermission() async {
+    try {
+      final service = ref.read(attendanceServiceProvider);
+      final settings = await service.getShopSettings();
+      final authState = ref.read(authProvider);
+      final userRole = authState.user?.rawRole?.toUpperCase() ?? '';
+
+      bool allowed = false;
+      if (userRole == 'MANAGER' || userRole == 'OWNER' || userRole == 'ADMIN') {
+        allowed = settings['allowManagerSelfAttendance'] == true;
+      } else {
+        allowed = settings['allowStaffSelfAttendance'] == true;
+      }
+
+      if (mounted) {
+        setState(() => _selfAttendanceAllowed = allowed);
+      }
+    } catch (e) {
+      debugPrint('Error loading self-attendance permission: $e');
+    }
+  }
 
   Future<void> _handleScan(String code) async {
     if (_isLoading) return;
@@ -89,6 +121,59 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
           context,
           title: 'Success!',
           message: 'You have clocked in successfully.',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
+        );
+      }
+    } catch (e) {
+      final displayMessage = e is Failure ? e.message : e.toString();
+      if (mounted) {
+        ModernAlert.show(
+          context,
+          title: 'Error',
+          message: displayMessage,
+          icon: Icons.error_outline,
+          iconColor: Colors.red,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleSelfCheckIn() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      _isScanning = false;
+    });
+
+    try {
+      final service = ref.read(attendanceServiceProvider);
+      final authState = ref.read(authProvider);
+
+      // 1. Get GPS Position
+      final position = await service.getCurrentPosition();
+
+      // 2. Send self check-in (no QR token)
+      await service.selfCheckIn(
+        employeeId: authState.user!.id,
+        lat: position.latitude,
+        lng: position.longitude,
+      );
+
+      // 3. Refresh lists
+      ref.invalidate(employeeAttendanceHistoryProvider(authState.user!.id));
+      ref.invalidate(attendanceRecordsProvider);
+
+      if (mounted) {
+        ModernAlert.show(
+          context,
+          title: 'Success!',
+          message: 'You have self-clocked in successfully.',
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
         );
@@ -297,29 +382,49 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                   ),
                 )
               else
-                Row(
+                Column(
                   children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => setState(() => _isScanning = true),
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Check In'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => setState(() => _isScanning = true),
+                            icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+                            label: const Text('Scan QR'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _handleCheckOut,
+                            icon: const Icon(Icons.logout_rounded, size: 18),
+                            label: const Text('Check Out'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_selfAttendanceAllowed) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _handleSelfCheckIn,
+                          icon: const Icon(Icons.fingerprint_rounded, size: 20),
+                          label: const Text('Self Clock In (GPS Only)'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _handleCheckOut,
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Check Out'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               if (_isLoading) ...[
@@ -429,6 +534,146 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
             error: (e, _) => Center(child: Text('Error: $e')),
           ),
         ),
+      ],
+    );
+  }
+}
+
+class RotatingQrWidget extends StatefulWidget {
+  final String secretKey;
+  final double size;
+  final bool showProgress;
+  final bool isStatic;
+
+  const RotatingQrWidget({
+    super.key,
+    required this.secretKey,
+    required this.size,
+    this.showProgress = true,
+    this.isStatic = false,
+  });
+
+  @override
+  State<RotatingQrWidget> createState() => _RotatingQrWidgetState();
+}
+
+class _RotatingQrWidgetState extends State<RotatingQrWidget> {
+  Timer? _timer;
+  String _token = '';
+  int _secondsRemaining = 30;
+  int _generationTimestamp = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetTimer();
+    if (!widget.isStatic) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (mounted) {
+          setState(() {
+            _tick();
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant RotatingQrWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.secretKey != widget.secretKey || oldWidget.isStatic != widget.isStatic) {
+      _timer?.cancel();
+      _resetTimer();
+      if (!widget.isStatic) {
+        _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          if (mounted) {
+            setState(() {
+              _tick();
+            });
+          }
+        });
+      }
+    }
+  }
+
+  void _resetTimer() {
+    _generationTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    _secondsRemaining = 30;
+    _token = _generateTokenString();
+  }
+
+  void _tick() {
+    if (widget.isStatic) return;
+    _secondsRemaining--;
+    if (_secondsRemaining <= 0) {
+      _resetTimer();
+    }
+  }
+
+  String _generateTokenString() {
+    if (widget.isStatic) {
+      return widget.secretKey;
+    }
+    final input = '${widget.secretKey}:$_generationTimestamp';
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    final hash = digest.toString();
+    return '$hash|$_generationTimestamp';
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: QrImageView(
+            data: _token,
+            version: QrVersions.auto,
+            size: widget.size,
+          ),
+        ),
+        if (widget.showProgress) ...[
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  value: _secondsRemaining / 30.0,
+                  strokeWidth: 2.5,
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                  backgroundColor: AppTheme.primary.withOpacity(0.15),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Refreshing in ${_secondsRemaining}s',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -618,6 +863,29 @@ class OwnerAttendanceView extends ConsumerWidget {
                                   height: 1.4,
                                 ),
                               ),
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.security_rounded, size: 12, color: AppTheme.primary),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Dynamic Code (Anti-Cheat)',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -625,7 +893,7 @@ class OwnerAttendanceView extends ConsumerWidget {
                         GestureDetector(
                           onTap: () => _showExpandedQrDialog(
                             context,
-                            settings['secretKey'] ?? 'KrubKrongERP',
+                            settings['secretKey'] ?? 'krobkrong_secret_123',
                             settings['shopName'] ?? 'Default Shop',
                           ),
                           child: Container(
@@ -646,10 +914,11 @@ class OwnerAttendanceView extends ConsumerWidget {
                               child: Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  QrImageView(
-                                    data: settings['secretKey'] ?? 'KrubKrongERP',
-                                    version: QrVersions.auto,
+                                  RotatingQrWidget(
+                                    secretKey: settings['secretKey'] ?? 'krobkrong_secret_123',
                                     size: 110.0,
+                                    showProgress: false,
+                                    isStatic: true,
                                   ),
                                   Positioned(
                                     bottom: 2,
@@ -1056,10 +1325,10 @@ class OwnerAttendanceView extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        child: QrImageView(
-                          data: secretKey,
-                          version: QrVersions.auto,
+                        child: RotatingQrWidget(
+                          secretKey: secretKey,
                           size: 260.0,
+                          showProgress: true,
                         ),
                       ),
                       const SizedBox(height: 24),

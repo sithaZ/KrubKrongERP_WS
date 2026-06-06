@@ -149,5 +149,26 @@ class AttendanceService {
       throw ServerFailure(message: e.response?.data['message'] ?? 'Failed to update shift');
     }
   }
+
+  /// Self-attendance check-in (no QR token required, GPS + role validation only)
+  Future<Map<String, dynamic>> selfCheckIn({
+    required String employeeId,
+    required double lat,
+    required double lng,
+    String? note,
+  }) async {
+    try {
+      final response = await _client.post('/attendance/check-in', data: {
+        'employeeId': employeeId,
+        'lat': lat,
+        'lng': lng,
+        'selfCheckIn': true,
+        'note': note,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      throw ServerFailure(message: e.response?.data['message'] ?? 'Self check-in failed');
+    }
+  }
 }
 
