@@ -33,11 +33,13 @@ class AttendanceScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
-    final isOwnerOrManager = (user?.isOwner ?? false) || 
-                             (user?.isAdmin ?? false) || 
-                             (user?.isStrictManager ?? false);
+    final isOwnerOrManager = (user?.isOwner ?? false) ||
+        (user?.isAdmin ?? false) ||
+        (user?.isStrictManager ?? false);
 
-    final body = isOwnerOrManager ? const OwnerAttendanceView() : const StaffAttendanceView();
+    final body = isOwnerOrManager
+        ? const OwnerAttendanceView()
+        : const StaffAttendanceView();
 
     if (!showAppBar) {
       return body;
@@ -56,7 +58,8 @@ class StaffAttendanceView extends ConsumerStatefulWidget {
   const StaffAttendanceView({super.key});
 
   @override
-  ConsumerState<StaffAttendanceView> createState() => _StaffAttendanceViewState();
+  ConsumerState<StaffAttendanceView> createState() =>
+      _StaffAttendanceViewState();
 }
 
 class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
@@ -94,7 +97,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
 
   Future<void> _handleScan(String code) async {
     if (_isLoading) return;
-    
+
     setState(() {
       _isLoading = true;
       _isScanning = false;
@@ -103,10 +106,10 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
     try {
       final service = ref.read(attendanceServiceProvider);
       final authState = ref.read(authProvider);
-      
+
       // 1. Get GPS Position (High Accuracy, fetched once)
       final position = await service.getCurrentPosition();
-      
+
       // 2. Send to backend
       await service.checkIn(
         employeeId: authState.user!.id,
@@ -248,43 +251,48 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
     }
   }
 
-  Widget _buildLiveShiftStatus(Employee employee, ThemeData theme, bool isDark) {
+  Widget _buildLiveShiftStatus(
+      Employee employee, ThemeData theme, bool isDark) {
     if (employee.shiftStartTime == null) return const SizedBox.shrink();
 
     final now = DateTime.now();
-    
+
     try {
       final parts = employee.shiftStartTime!.split(':');
       if (parts.length == 2) {
         final shiftStartHour = int.parse(parts[0]);
         final shiftStartMin = int.parse(parts[1]);
-        
+
         final grace = employee.shiftGracePeriodMinutes ?? 15;
-        
-        final shiftStart = DateTime(now.year, now.month, now.day, shiftStartHour, shiftStartMin);
+
+        final shiftStart = DateTime(
+            now.year, now.month, now.day, shiftStartHour, shiftStartMin);
         final graceLimit = shiftStart.add(Duration(minutes: grace));
-        
+
         final isLate = now.isAfter(graceLimit);
-        
+
         return Container(
           margin: const EdgeInsets.only(top: 14, bottom: 6),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
+            border: Border.all(
+                color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.schedule_rounded, color: AppTheme.primary, size: 18),
+                  const Icon(Icons.schedule_rounded,
+                      color: AppTheme.primary, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Your Shift: ${employee.shiftName ?? "Standard"}',
-                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -292,7 +300,9 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                   Text(
                     '${employee.shiftStartTime} - ${employee.shiftEndTime}',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                      color: isDark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.lightTextSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -307,9 +317,12 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: isLate ? Colors.orange.withOpacity(0.12) : Colors.green.withOpacity(0.12),
+                      color: isLate
+                          ? Colors.orange.withOpacity(0.12)
+                          : Colors.green.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -336,7 +349,8 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final historyAsync = ref.watch(employeeAttendanceHistoryProvider(authState.user!.id));
+    final historyAsync =
+        ref.watch(employeeAttendanceHistoryProvider(authState.user!.id));
     final employeesAsync = ref.watch(employeesProvider);
 
     return Column(
@@ -357,10 +371,13 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                 data: (employees) {
                   if (employees.isEmpty) return const SizedBox.shrink();
                   final employee = employees.firstWhere(
-                    (e) => e.userId == authState.user?.id || e.id == authState.user?.id,
+                    (e) =>
+                        e.userId == authState.user?.id ||
+                        e.id == authState.user?.id,
                     orElse: () => employees.first,
                   );
-                  return _buildLiveShiftStatus(employee, Theme.of(context), Theme.of(context).brightness == Brightness.dark);
+                  return _buildLiveShiftStatus(employee, Theme.of(context),
+                      Theme.of(context).brightness == Brightness.dark);
                 },
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
@@ -385,7 +402,8 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                               ),
                             );
                           },
-                          icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+                          icon: const Icon(Icons.qr_code_scanner_rounded,
+                              size: 18),
                           label: const Text('Scan QR'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -437,14 +455,16 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
             children: [
               Icon(Icons.history, size: 20),
               SizedBox(width: 8),
-              Text('My Recent Shifts', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('My Recent Shifts',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
         ),
         Expanded(
           child: historyAsync.when(
             data: (history) => RefreshIndicator(
-              onRefresh: () => ref.refresh(employeeAttendanceHistoryProvider(authState.user!.id).future),
+              onRefresh: () => ref.refresh(
+                  employeeAttendanceHistoryProvider(authState.user!.id).future),
               child: history.isEmpty
                   ? const SingleChildScrollView(
                       physics: AlwaysScrollableScrollPhysics(),
@@ -460,32 +480,45 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                       itemBuilder: (context, index) {
                         final record = history[index];
                         final checkIn = DateTime.parse(record['checkIn']);
-                        final checkOut = record['checkOut'] != null ? DateTime.parse(record['checkOut']) : null;
-                        
+                        final checkOut = record['checkOut'] != null
+                            ? DateTime.parse(record['checkOut'])
+                            : null;
+
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
-                            onTap: () => context.push(AppRoutePaths.attendanceDetail, extra: record),
+                            onTap: () => context.push(
+                                AppRoutePaths.attendanceDetail,
+                                extra: record),
                             leading: CircleAvatar(
-                              backgroundColor: checkOut == null ? Colors.green.shade100 : Colors.blue.shade100,
+                              backgroundColor: checkOut == null
+                                  ? Colors.green.shade100
+                                  : Colors.blue.shade100,
                               child: Icon(
                                 checkOut == null ? Icons.login : Icons.logout,
-                                color: checkOut == null ? Colors.green : Colors.blue,
+                                color: checkOut == null
+                                    ? Colors.green
+                                    : Colors.blue,
                               ),
                             ),
-                            title: Text(DateFormat('EEEE, MMM d').format(checkIn)),
+                            title:
+                                Text(DateFormat('EEEE, MMM d').format(checkIn)),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'In: ${DateFormat('hh:mm a').format(checkIn)}' +
-                                  (checkOut != null ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}' : ' - Active'),
+                                      (checkOut != null
+                                          ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}'
+                                          : ' - Active'),
                                 ),
-                                if (record['staffId']?['shiftName'] != null) ...[
+                                if (record['staffId']?['shiftName'] !=
+                                    null) ...[
                                   const SizedBox(height: 2),
                                   Text(
                                     'Shift: ${record['staffId']['shiftName']} (${record['staffId']['shiftStartTime']} - ${record['staffId']['shiftEndTime']})',
-                                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                    style: const TextStyle(
+                                        fontSize: 11, color: Colors.grey),
                                   ),
                                 ],
                               ],
@@ -495,23 +528,35 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 if (record['workedHours'] != null)
-                                  Text('${record['workedHours'].toStringAsFixed(1)}h', 
-                                      style: const TextStyle(fontWeight: FontWeight.bold))
+                                  Text(
+                                      '${record['workedHours'].toStringAsFixed(1)}h',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))
                                 else
-                                  const Text('...', style: TextStyle(color: Colors.green)),
+                                  const Text('...',
+                                      style: TextStyle(color: Colors.green)),
                                 const SizedBox(height: 4),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: (record['attendanceStatus'] == 'LATE' || record['status'] == 'late')
-                                        ? Colors.orange.withOpacity(0.12)
-                                        : Colors.green.withOpacity(0.12),
+                                    color:
+                                        (record['attendanceStatus'] == 'LATE' ||
+                                                record['status'] == 'late')
+                                            ? Colors.orange.withOpacity(0.12)
+                                            : Colors.green.withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    (record['attendanceStatus'] ?? record['status'] ?? 'PRESENT').toString().toUpperCase(),
+                                    (record['attendanceStatus'] ??
+                                            record['status'] ??
+                                            'PRESENT')
+                                        .toString()
+                                        .toUpperCase(),
                                     style: TextStyle(
-                                      color: (record['attendanceStatus'] == 'LATE' || record['status'] == 'late')
+                                      color: (record['attendanceStatus'] ==
+                                                  'LATE' ||
+                                              record['status'] == 'late')
                                           ? Colors.orange
                                           : Colors.green,
                                       fontWeight: FontWeight.bold,
@@ -556,7 +601,7 @@ class RotatingQrWidget extends StatefulWidget {
 class _RotatingQrWidgetState extends State<RotatingQrWidget> {
   Timer? _timer;
   String _token = '';
-  int _secondsRemaining = 30;
+  int _secondsRemaining = 300;
   int _generationTimestamp = 0;
 
   @override
@@ -577,7 +622,8 @@ class _RotatingQrWidgetState extends State<RotatingQrWidget> {
   @override
   void didUpdateWidget(covariant RotatingQrWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.secretKey != widget.secretKey || oldWidget.isStatic != widget.isStatic) {
+    if (oldWidget.secretKey != widget.secretKey ||
+        oldWidget.isStatic != widget.isStatic) {
       _timer?.cancel();
       _resetTimer();
       if (!widget.isStatic) {
@@ -594,7 +640,7 @@ class _RotatingQrWidgetState extends State<RotatingQrWidget> {
 
   void _resetTimer() {
     _generationTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    _secondsRemaining = 30;
+    _secondsRemaining = 99999999999;
     _token = _generateTokenString();
   }
 
@@ -654,7 +700,8 @@ class _RotatingQrWidgetState extends State<RotatingQrWidget> {
                 child: CircularProgressIndicator(
                   value: _secondsRemaining / 30.0,
                   strokeWidth: 2.5,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(AppTheme.primary),
                   backgroundColor: AppTheme.primary.withOpacity(0.15),
                 ),
               ),
@@ -664,7 +711,9 @@ class _RotatingQrWidgetState extends State<RotatingQrWidget> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
+                  color: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.lightTextPrimary,
                 ),
               ),
             ],
@@ -692,7 +741,8 @@ class OwnerAttendanceView extends ConsumerWidget {
     return settingsAsync.when(
       data: (settings) {
         final coords = settings['coordinates'];
-        final hasLocation = coords != null && coords['lat'] != null && coords['lng'] != null;
+        final hasLocation =
+            coords != null && coords['lat'] != null && coords['lng'] != null;
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -721,10 +771,14 @@ class OwnerAttendanceView extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+                            color: isDark
+                                ? AppTheme.darkSurface
+                                : AppTheme.lightSurface,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
+                              color: isDark
+                                  ? AppTheme.darkBorder
+                                  : AppTheme.lightBorder,
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -746,16 +800,20 @@ class OwnerAttendanceView extends ConsumerWidget {
                                       color: AppTheme.primary.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: Icon(Icons.storefront_rounded, color: AppTheme.primary, size: 24),
+                                    child: Icon(Icons.storefront_rounded,
+                                        color: AppTheme.primary, size: 24),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          settings['shopName'] ?? 'Shop Profile',
-                                          style: theme.textTheme.titleMedium?.copyWith(
+                                          settings['shopName'] ??
+                                              'Shop Profile',
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
                                             fontWeight: FontWeight.w700,
                                           ),
                                           maxLines: 1,
@@ -764,8 +822,11 @@ class OwnerAttendanceView extends ConsumerWidget {
                                         const SizedBox(height: 2),
                                         Text(
                                           'Allowed Radius: ${settings['radius'] ?? 50}m',
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                            color: isDark
+                                                ? AppTheme.darkTextSecondary
+                                                : AppTheme.lightTextSecondary,
                                           ),
                                         ),
                                       ],
@@ -773,8 +834,12 @@ class OwnerAttendanceView extends ConsumerWidget {
                                   ),
                                   const SizedBox(width: 8),
                                   StatusBadge(
-                                    label: hasLocation ? 'GPS Pinned' : 'No GPS Set',
-                                    color: hasLocation ? AppTheme.success : AppTheme.warning,
+                                    label: hasLocation
+                                        ? 'GPS Pinned'
+                                        : 'No GPS Set',
+                                    color: hasLocation
+                                        ? AppTheme.success
+                                        : AppTheme.warning,
                                   ),
                                 ],
                               ),
@@ -783,17 +848,21 @@ class OwnerAttendanceView extends ConsumerWidget {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: isDark ? Colors.white.withOpacity(0.04) : AppTheme.lightFill,
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.04)
+                                        : AppTheme.lightFill,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.location_on, color: Colors.redAccent, size: 16),
+                                      const Icon(Icons.location_on,
+                                          color: Colors.redAccent, size: 16),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
                                           'Coordinates: ${coords['lat'].toStringAsFixed(5)}, ${coords['lng'].toStringAsFixed(5)}',
-                                          style: theme.textTheme.bodySmall?.copyWith(
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
                                             fontFamily: 'monospace',
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -808,7 +877,9 @@ class OwnerAttendanceView extends ConsumerWidget {
                                 'Configure Shop GPS Coordinates',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                                  color: isDark
+                                      ? AppTheme.darkTextSecondary
+                                      : AppTheme.lightTextSecondary,
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -816,15 +887,20 @@ class OwnerAttendanceView extends ConsumerWidget {
                                 children: [
                                   Expanded(
                                     child: ElevatedButton.icon(
-                                      onPressed: () => _setShopLocation(context, ref),
-                                      icon: const Icon(Icons.my_location_rounded, size: 16),
+                                      onPressed: () =>
+                                          _setShopLocation(context, ref),
+                                      icon: const Icon(
+                                          Icons.my_location_rounded,
+                                          size: 16),
                                       label: const Text('Pin Current GPS'),
                                       style: ElevatedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 14),
                                         backgroundColor: AppTheme.primary,
                                         foregroundColor: Colors.white,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                       ),
                                     ),
@@ -832,13 +908,17 @@ class OwnerAttendanceView extends ConsumerWidget {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: OutlinedButton.icon(
-                                      onPressed: () => _showLinkInputDialog(context, ref),
-                                      icon: const Icon(Icons.map_rounded, size: 16),
+                                      onPressed: () =>
+                                          _showLinkInputDialog(context, ref),
+                                      icon: const Icon(Icons.map_rounded,
+                                          size: 16),
                                       label: const Text('Paste Maps Link'),
                                       style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 14),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                       ),
                                     ),
@@ -854,10 +934,14 @@ class OwnerAttendanceView extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+                          color: isDark
+                              ? AppTheme.darkSurface
+                              : AppTheme.lightSurface,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
+                            color: isDark
+                                ? AppTheme.darkBorder
+                                : AppTheme.lightBorder,
                           ),
                         ),
                         child: Row(
@@ -876,13 +960,16 @@ class OwnerAttendanceView extends ConsumerWidget {
                                   Text(
                                     'Have your employees scan this unique shop QR code using their KrubKrong app when they arrive at the shop to check in instantly.',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                                      color: isDark
+                                          ? AppTheme.darkTextSecondary
+                                          : AppTheme.lightTextSecondary,
                                       height: 1.4,
                                     ),
                                   ),
                                   const SizedBox(height: 10),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: AppTheme.primary.withOpacity(0.08),
                                       borderRadius: BorderRadius.circular(6),
@@ -890,7 +977,8 @@ class OwnerAttendanceView extends ConsumerWidget {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.security_rounded, size: 12, color: AppTheme.primary),
+                                        const Icon(Icons.security_rounded,
+                                            size: 12, color: AppTheme.primary),
                                         const SizedBox(width: 6),
                                         Text(
                                           'Dynamic Code (Anti-Cheat)',
@@ -918,7 +1006,8 @@ class OwnerAttendanceView extends ConsumerWidget {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey.shade200),
+                                  border:
+                                      Border.all(color: Colors.grey.shade200),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.04),
@@ -932,7 +1021,8 @@ class OwnerAttendanceView extends ConsumerWidget {
                                     alignment: Alignment.center,
                                     children: [
                                       RotatingQrWidget(
-                                        secretKey: settings['secretKey'] ?? 'krobkrong_secret_123',
+                                        secretKey: settings['secretKey'] ??
+                                            'krobkrong_secret_123',
                                         size: 100.0,
                                         showProgress: false,
                                         isStatic: true,
@@ -971,12 +1061,14 @@ class OwnerAttendanceView extends ConsumerWidget {
                   children: [
                     Divider(),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       child: Row(
                         children: [
                           Icon(Icons.people_outline, size: 20),
                           SizedBox(width: 8),
-                          Text('Staff Attendance Monitor', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Staff Attendance Monitor',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -990,7 +1082,8 @@ class OwnerAttendanceView extends ConsumerWidget {
                     return const SliverToBoxAdapter(
                       child: SizedBox(
                         height: 200,
-                        child: Center(child: Text('No attendance records found today')),
+                        child: Center(
+                            child: Text('No attendance records found today')),
                       ),
                     );
                   }
@@ -1001,15 +1094,21 @@ class OwnerAttendanceView extends ConsumerWidget {
                         (context, index) {
                           final record = records[index];
                           final checkIn = DateTime.parse(record['checkIn']);
-                          final checkOut = record['checkOut'] != null ? DateTime.parse(record['checkOut']) : null;
-                          final employeeName = record['employeeId']?['fullName'] ?? 'Staff';
+                          final checkOut = record['checkOut'] != null
+                              ? DateTime.parse(record['checkOut'])
+                              : null;
+                          final employeeName =
+                              record['employeeId']?['fullName'] ?? 'Staff';
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
-                              onTap: () => context.push(AppRoutePaths.attendanceDetail, extra: record),
+                              onTap: () => context.push(
+                                  AppRoutePaths.attendanceDetail,
+                                  extra: record),
                               leading: CircleAvatar(
-                                child: Text(employeeName.substring(0, 1).toUpperCase()),
+                                child: Text(
+                                    employeeName.substring(0, 1).toUpperCase()),
                               ),
                               title: Text(employeeName),
                               subtitle: Column(
@@ -1017,13 +1116,17 @@ class OwnerAttendanceView extends ConsumerWidget {
                                 children: [
                                   Text(
                                     'In: ${DateFormat('hh:mm a').format(checkIn)}' +
-                                    (checkOut != null ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}' : ' - On-Site'),
+                                        (checkOut != null
+                                            ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}'
+                                            : ' - On-Site'),
                                   ),
-                                  if (record['staffId']?['shiftName'] != null) ...[
+                                  if (record['staffId']?['shiftName'] !=
+                                      null) ...[
                                     const SizedBox(height: 2),
                                     Text(
                                       'Shift: ${record['staffId']['shiftName']} (${record['staffId']['shiftStartTime']} - ${record['staffId']['shiftEndTime']})',
-                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                      style: const TextStyle(
+                                          fontSize: 11, color: Colors.grey),
                                     ),
                                   ],
                                 ],
@@ -1032,23 +1135,36 @@ class OwnerAttendanceView extends ConsumerWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Text(DateFormat('MMM d').format(checkIn), style: const TextStyle(fontSize: 12)),
+                                  Text(DateFormat('MMM d').format(checkIn),
+                                      style: const TextStyle(fontSize: 12)),
                                   if (record['workedHours'] != null)
-                                    Text('${record['workedHours'].toStringAsFixed(1)}h',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                                    Text(
+                                        '${record['workedHours'].toStringAsFixed(1)}h',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue)),
                                   const SizedBox(height: 4),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: (record['attendanceStatus'] == 'LATE' || record['status'] == 'late')
+                                      color: (record['attendanceStatus'] ==
+                                                  'LATE' ||
+                                              record['status'] == 'late')
                                           ? Colors.orange.withOpacity(0.12)
                                           : Colors.green.withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      (record['attendanceStatus'] ?? record['status'] ?? 'PRESENT').toString().toUpperCase(),
+                                      (record['attendanceStatus'] ??
+                                              record['status'] ??
+                                              'PRESENT')
+                                          .toString()
+                                          .toUpperCase(),
                                       style: TextStyle(
-                                        color: (record['attendanceStatus'] == 'LATE' || record['status'] == 'late')
+                                        color: (record['attendanceStatus'] ==
+                                                    'LATE' ||
+                                                record['status'] == 'late')
                                             ? Colors.orange
                                             : Colors.green,
                                         fontWeight: FontWeight.bold,
@@ -1089,7 +1205,7 @@ class OwnerAttendanceView extends ConsumerWidget {
 
   Future<void> _showLinkInputDialog(BuildContext context, WidgetRef ref) async {
     final controller = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1114,7 +1230,9 @@ class OwnerAttendanceView extends ConsumerWidget {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               String input = controller.text.trim();
@@ -1125,7 +1243,8 @@ class OwnerAttendanceView extends ConsumerWidget {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                  builder: (context) =>
+                      const Center(child: CircularProgressIndicator()),
                 );
               }
 
@@ -1136,20 +1255,22 @@ class OwnerAttendanceView extends ConsumerWidget {
                 // 1. Handle shortened URLs (maps.app.goo.gl)
                 if (input.contains('maps.app.goo.gl')) {
                   final dio = ref.read(httpClientInstanceProvider);
-                  final response = await dio.get(
-                    input, 
-                    options: Options(
-                      followRedirects: true, 
-                      validateStatus: (status) => status! < 500,
-                      headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-                    )
-                  );
+                  final response = await dio.get(input,
+                      options: Options(
+                          followRedirects: true,
+                          validateStatus: (status) => status! < 500,
+                          headers: {
+                            'User-Agent':
+                                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                          }));
                   input = response.realUri.toString();
-                  
+
                   // Fallback: If URL doesn't have coordinates, search the HTML body
                   if (!input.contains('@') && !input.contains('!3d')) {
                     final body = response.data.toString();
-                    final bodyMatch = RegExp(r'center=(-?\d+\.\d+)%2C(-?\d+\.\d+)').firstMatch(body);
+                    final bodyMatch =
+                        RegExp(r'center=(-?\d+\.\d+)%2C(-?\d+\.\d+)')
+                            .firstMatch(body);
                     if (bodyMatch != null) {
                       lat = double.tryParse(bodyMatch.group(1)!);
                       lng = double.tryParse(bodyMatch.group(2)!);
@@ -1161,7 +1282,8 @@ class OwnerAttendanceView extends ConsumerWidget {
                 debugPrint('Parsing URL: $input');
 
                 // 2. Try to find @lat,lng (Common in browser links)
-                final atMatch = RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(input);
+                final atMatch =
+                    RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(input);
                 if (atMatch != null) {
                   lat = double.tryParse(atMatch.group(1)!);
                   lng = double.tryParse(atMatch.group(2)!);
@@ -1169,7 +1291,9 @@ class OwnerAttendanceView extends ConsumerWidget {
 
                 // 3. Try to find q= or query=
                 if (lat == null) {
-                  final qMatch = RegExp(r'[?&](?:q|query|ll|center)=(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(input);
+                  final qMatch = RegExp(
+                          r'[?&](?:q|query|ll|center)=(-?\d+\.\d+),(-?\d+\.\d+)')
+                      .firstMatch(input);
                   if (qMatch != null) {
                     lat = double.tryParse(qMatch.group(1)!);
                     lng = double.tryParse(qMatch.group(2)!);
@@ -1178,7 +1302,8 @@ class OwnerAttendanceView extends ConsumerWidget {
 
                 // 4. Try to find !3d lat !4d lng (Common in Place links)
                 if (lat == null) {
-                  final placeMatch = RegExp(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)').firstMatch(input);
+                  final placeMatch = RegExp(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)')
+                      .firstMatch(input);
                   if (placeMatch != null) {
                     lat = double.tryParse(placeMatch.group(1)!);
                     lng = double.tryParse(placeMatch.group(2)!);
@@ -1187,7 +1312,8 @@ class OwnerAttendanceView extends ConsumerWidget {
 
                 // 5. Try to parse raw "lat, lng"
                 if (lat == null) {
-                  final rawMatch = RegExp(r'(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)').firstMatch(input);
+                  final rawMatch = RegExp(r'(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)')
+                      .firstMatch(input);
                   if (rawMatch != null) {
                     lat = double.tryParse(rawMatch.group(1)!);
                     lng = double.tryParse(rawMatch.group(2)!);
@@ -1201,11 +1327,11 @@ class OwnerAttendanceView extends ConsumerWidget {
                   await service.updateShopSettings({
                     'coordinates': {'lat': lat, 'lng': lng},
                   });
-                  
+
                   // Force a hard refresh of the settings
                   ref.invalidate(shopSettingsProvider);
                   await ref.read(shopSettingsProvider.future);
-                  
+
                   if (context.mounted) {
                     Navigator.pop(context); // Close input dialog
                     ModernAlert.show(
@@ -1220,7 +1346,9 @@ class OwnerAttendanceView extends ConsumerWidget {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Could not find coordinates. Try pasting the numbers directly like this: 11.57, 104.85', style: TextStyle(color: Colors.white)),
+                        content: Text(
+                            'Could not find coordinates. Try pasting the numbers directly like this: 11.57, 104.85',
+                            style: TextStyle(color: Colors.white)),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -1231,7 +1359,8 @@ class OwnerAttendanceView extends ConsumerWidget {
                   Navigator.pop(context); // Close loading
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error: $e', style: const TextStyle(color: Colors.white)),
+                      content: Text('Error: $e',
+                          style: const TextStyle(color: Colors.white)),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -1249,7 +1378,7 @@ class OwnerAttendanceView extends ConsumerWidget {
     try {
       final service = ref.read(attendanceServiceProvider);
       final position = await service.getCurrentPosition();
-      
+
       await service.updateShopSettings({
         'coordinates': {
           'lat': position.latitude,
@@ -1261,7 +1390,8 @@ class OwnerAttendanceView extends ConsumerWidget {
         ModernAlert.show(
           context,
           title: 'Shop Location Pinned!',
-          message: 'Success! Your shop is now officially pinned at this GPS location. Your staff can now clock in when they are within 50 meters of this spot.',
+          message:
+              'Success! Your shop is now officially pinned at this GPS location. Your staff can now clock in when they are within 50 meters of this spot.',
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
         );
@@ -1276,7 +1406,8 @@ class OwnerAttendanceView extends ConsumerWidget {
     }
   }
 
-  void _showExpandedQrDialog(BuildContext context, String secretKey, String shopName) {
+  void _showExpandedQrDialog(
+      BuildContext context, String secretKey, String shopName) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -1290,7 +1421,8 @@ class OwnerAttendanceView extends ConsumerWidget {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
               child: ScaleTransition(
-                scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+                scale:
+                    CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 32),
                   padding: const EdgeInsets.all(28),
@@ -1337,7 +1469,8 @@ class OwnerAttendanceView extends ConsumerWidget {
                           ),
                           IconButton(
                             onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close_rounded, color: Colors.black54),
+                            icon: const Icon(Icons.close_rounded,
+                                color: Colors.black54),
                             style: IconButton.styleFrom(
                               backgroundColor: Colors.grey.shade100,
                             ),
@@ -1399,7 +1532,8 @@ class ManagerClockInOutCard extends ConsumerStatefulWidget {
   const ManagerClockInOutCard({super.key});
 
   @override
-  ConsumerState<ManagerClockInOutCard> createState() => _ManagerClockInOutCardState();
+  ConsumerState<ManagerClockInOutCard> createState() =>
+      _ManagerClockInOutCardState();
 }
 
 class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
@@ -1436,7 +1570,7 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
 
   Future<void> _handleScan(String code) async {
     if (_isLoading) return;
-    
+
     setState(() {
       _isLoading = true;
     });
@@ -1444,9 +1578,9 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
     try {
       final service = ref.read(attendanceServiceProvider);
       final authState = ref.read(authProvider);
-      
+
       final position = await service.getCurrentPosition();
-      
+
       await service.checkIn(
         employeeId: authState.user!.id,
         lat: position.latitude,
@@ -1581,43 +1715,48 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
     }
   }
 
-  Widget _buildLiveShiftStatus(Employee employee, ThemeData theme, bool isDark) {
+  Widget _buildLiveShiftStatus(
+      Employee employee, ThemeData theme, bool isDark) {
     if (employee.shiftStartTime == null) return const SizedBox.shrink();
 
     final now = DateTime.now();
-    
+
     try {
       final parts = employee.shiftStartTime!.split(':');
       if (parts.length == 2) {
         final shiftStartHour = int.parse(parts[0]);
         final shiftStartMin = int.parse(parts[1]);
-        
+
         final grace = employee.shiftGracePeriodMinutes ?? 15;
-        
-        final shiftStart = DateTime(now.year, now.month, now.day, shiftStartHour, shiftStartMin);
+
+        final shiftStart = DateTime(
+            now.year, now.month, now.day, shiftStartHour, shiftStartMin);
         final graceLimit = shiftStart.add(Duration(minutes: grace));
-        
+
         final isLate = now.isAfter(graceLimit);
-        
+
         return Container(
           margin: const EdgeInsets.only(top: 14, bottom: 6),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
+            border: Border.all(
+                color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.schedule_rounded, color: AppTheme.primary, size: 18),
+                  const Icon(Icons.schedule_rounded,
+                      color: AppTheme.primary, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Your Shift: ${employee.shiftName ?? "Standard"}',
-                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -1625,7 +1764,9 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
                   Text(
                     '${employee.shiftStartTime} - ${employee.shiftEndTime}',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                      color: isDark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.lightTextSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1640,9 +1781,12 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: isLate ? Colors.orange.withOpacity(0.12) : Colors.green.withOpacity(0.12),
+                      color: isLate
+                          ? Colors.orange.withOpacity(0.12)
+                          : Colors.green.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -1694,7 +1838,8 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
                   color: Colors.blue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.blue, size: 24),
+                child: const Icon(Icons.qr_code_scanner_rounded,
+                    color: Colors.blue, size: 24),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -1711,7 +1856,9 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
                     Text(
                       'Clock-in or out for your shift',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                        color: isDark
+                            ? AppTheme.darkTextSecondary
+                            : AppTheme.lightTextSecondary,
                       ),
                     ),
                   ],
@@ -1724,7 +1871,9 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
             data: (employees) {
               if (employees.isEmpty) return const SizedBox.shrink();
               final employee = employees.firstWhere(
-                (e) => e.userId == authState.user?.id || e.id == authState.user?.id,
+                (e) =>
+                    e.userId == authState.user?.id ||
+                    e.id == authState.user?.id,
                 orElse: () => employees.first,
               );
               return _buildLiveShiftStatus(employee, theme, isDark);
