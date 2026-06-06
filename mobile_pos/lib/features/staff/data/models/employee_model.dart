@@ -16,9 +16,14 @@ class EmployeeModel {
     this.isActive = true,
     this.hireDate,
     this.shiftId,
+    this.shiftName,
+    this.shiftStartTime,
+    this.shiftEndTime,
+    this.shiftGracePeriodMinutes,
   });
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
+    final shiftMap = json['shiftId'] is Map ? json['shiftId'] as Map<String, dynamic> : null;
     return EmployeeModel(
       id: json['id'] as String? ?? json['_id'] as String? ?? '',
       fullName: json['fullName'] as String? ?? '',
@@ -35,10 +40,13 @@ class EmployeeModel {
       phone: json['phone'] as String?,
       isActive: json['isActive'] as bool? ?? true,
       hireDate: json['hireDate'] != null ? DateTime.tryParse(json['hireDate'] as String) : null,
-      shiftId: json['shiftId'] is Map
-          ? (json['shiftId'] as Map<String, dynamic>)['id'] as String? ??
-            (json['shiftId'] as Map<String, dynamic>)['_id'] as String?
+      shiftId: shiftMap != null
+          ? (shiftMap['id'] as String? ?? shiftMap['_id'] as String?)
           : json['shiftId'] as String?,
+      shiftName: shiftMap?['shiftName'] as String?,
+      shiftStartTime: shiftMap?['startTime'] as String?,
+      shiftEndTime: shiftMap?['endTime'] as String?,
+      shiftGracePeriodMinutes: shiftMap?['gracePeriodMinutes'] as int?,
     );
   }
 
@@ -55,6 +63,10 @@ class EmployeeModel {
   final bool isActive;
   final DateTime? hireDate;
   final String? shiftId;
+  final String? shiftName;
+  final String? shiftStartTime;
+  final String? shiftEndTime;
+  final int? shiftGracePeriodMinutes;
 
   Employee toEntity() {
     return Employee(
@@ -71,6 +83,10 @@ class EmployeeModel {
       isActive: isActive,
       hireDate: hireDate,
       shiftId: shiftId,
+      shiftName: shiftName,
+      shiftStartTime: shiftStartTime,
+      shiftEndTime: shiftEndTime,
+      shiftGracePeriodMinutes: shiftGracePeriodMinutes,
     );
   }
 

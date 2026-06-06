@@ -273,10 +273,9 @@ export class EmployeesService {
 
         const employee = new this.employeeModel(payload);
         const savedEmployee = await employee.save();
-        const populatedEmployee = await savedEmployee.populate(
-          'userId',
-          this.safeUserPopulate,
-        );
+        const populatedEmployee = await (
+          await savedEmployee.populate('userId', this.safeUserPopulate)
+        ).populate('shiftId');
 
         return {
           employee: populatedEmployee.toObject(),
@@ -321,20 +320,23 @@ export class EmployeesService {
     return this.employeeModel
       .find(this.buildAccessFilter(currentUser))
       .sort({ createdAt: -1 })
-      .populate('userId', this.safeUserPopulate);
+      .populate('userId', this.safeUserPopulate)
+      .populate('shiftId');
   }
 
   async findActive(currentUser: RequestUser) {
     return this.employeeModel
       .find({ ...this.buildAccessFilter(currentUser), isActive: true })
       .sort({ createdAt: -1 })
-      .populate('userId', this.safeUserPopulate);
+      .populate('userId', this.safeUserPopulate)
+      .populate('shiftId');
   }
 
   async findOne(id: string, currentUser: RequestUser) {
     const employee = await this.employeeModel
       .findById(id)
-      .populate('userId', this.safeUserPopulate);
+      .populate('userId', this.safeUserPopulate)
+      .populate('shiftId');
 
     if (!employee) {
       throw new NotFoundException('Employee not found');
@@ -446,7 +448,8 @@ export class EmployeesService {
 
     const employee = await this.employeeModel
       .findByIdAndUpdate(id, updatePayload, { new: true })
-      .populate('userId', this.safeUserPopulate);
+      .populate('userId', this.safeUserPopulate)
+      .populate('shiftId');
 
     if (!employee) {
       throw new NotFoundException('Employee not found');
@@ -482,7 +485,8 @@ export class EmployeesService {
 
     const employee = await this.employeeModel
       .findByIdAndUpdate(id, { isActive: false }, { new: true })
-      .populate('userId', this.safeUserPopulate);
+      .populate('userId', this.safeUserPopulate)
+      .populate('shiftId');
 
     if (!employee) {
       throw new NotFoundException('Employee not found');

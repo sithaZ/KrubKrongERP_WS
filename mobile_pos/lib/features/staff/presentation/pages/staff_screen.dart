@@ -177,6 +177,29 @@ class _EmployeeCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (employee.shiftName != null) ...[
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.schedule_rounded,
+                        size: 12,
+                        color: isDark ? AppTheme.darkTextDisabled : AppTheme.lightTextDisabled,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '${employee.shiftName} (${employee.shiftStartTime} - ${employee.shiftEndTime})',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -290,6 +313,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
   bool _loadingShifts = false;
   bool _isOwner = false;
   bool _saving = false;
+  String _startTime = '08:00';
+  String _endTime = '17:00';
 
   @override
   void initState() {
@@ -349,6 +374,16 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
       final shiftsList = await service.getAllShifts();
       setState(() {
         _shifts = shiftsList;
+        if (_selectedShiftId != null) {
+          final sel = _shifts.firstWhere(
+            (s) => s['_id'] == _selectedShiftId,
+            orElse: () => null,
+          );
+          if (sel != null) {
+            _startTime = sel['startTime'] ?? '08:00';
+            _endTime = sel['endTime'] ?? '17:00';
+          }
+        }
       });
     } catch (e) {
       debugPrint('Error loading shifts: $e');
@@ -372,9 +407,44 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _saving = true);
+      String? finalShiftId = _selectedShiftId;
+
+      try {
+        if (_selectedShiftId != null) {
+          final selectedShift = _shifts.firstWhere((s) => s['_id'] == _selectedShiftId);
+          final defaultStart = selectedShift['startTime'] ?? '00:00';
+          final defaultEnd = selectedShift['endTime'] ?? '00:00';
+
+          if (defaultStart != _startTime || defaultEnd != _endTime) {
+            // Shift timings differ from the default shift settings, create a custom shift
+            final service = ref.read(attendanceServiceProvider);
+            final newShift = await service.createShift({
+              'shiftName': '${selectedShift['shiftName'] ?? 'Shift'} (Custom)',
+              'startTime': _startTime,
+              'endTime': _endTime,
+              'gracePeriodMinutes': selectedShift['gracePeriodMinutes'] ?? 15,
+              'breakMinutes': selectedShift['breakMinutes'] ?? 60,
+              'isActive': false, // Hide from standard shift list
+            });
+            finalShiftId = newShift['_id'] ?? newShift['id'];
+          }
+        }
+      } catch (e) {
+        debugPrint('Error creating customized shift: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to customize shift timing: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() => _saving = false);
+        return;
+      }
       
       final currentEmp = widget.employee as Employee;
       final updated = currentEmp.copyWith(
@@ -386,7 +456,7 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
         baseSalary: double.tryParse(_salaryController.text) ?? 0.0,
         isActive: _isActive,
         hireDate: _selectedHireDate,
-        shiftId: _selectedShiftId,
+        shiftId: finalShiftId,
       );
 
       ref.read(staffNotifierProvider.notifier).updateEmployee(
@@ -404,6 +474,160 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
         },
       );
     }
+  }
+
+  Future<void> _selectTime(bool isStart) async {
+    final initialTime = _parseTimeString(isStart ? _startTime : _endTime);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+    if (picked != null) {
+      setState(() {
+        final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+        if (isStart) {
+          _startTime = formatted;
+        } else {
+          _endTime = formatted;
+        }
+      });
+    }
+  }
+
+  TimeOfDay _parseTimeString(String timeStr) {
+    final parts = timeStr.split(':');
+    if (parts.length == 2) {
+      return TimeOfDay(
+        hour: int.tryParse(parts[0]) ?? 8,
+        minute: int.tryParse(parts[1]) ?? 0,
+      );
+    }
+    return const TimeOfDay(hour: 8, minute: 0);
+  }
+
+  String _formatTimeForDisplay(String timeStr) {
+    final time = _parseTimeString(timeStr);
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$hour:$minute $period';
+  }
+
+  Future<void> _addNewShift() async {
+    final nameController = TextEditingController();
+    String start = '08:00';
+    String end = '17:00';
+    
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> selectDTime(bool isStart) async {
+              final initialTime = _parseTimeString(isStart ? start : end);
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: initialTime,
+              );
+              if (picked != null) {
+                setDialogState(() {
+                  final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                  if (isStart) {
+                    start = formatted;
+                  } else {
+                    end = formatted;
+                  }
+                });
+              }
+            }
+
+            return AlertDialog(
+              title: const Text('Add Shift Template'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Shift Name (e.g. Morning, Afternoon)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => selectDTime(true),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Start Time',
+                              prefixIcon: Icon(Icons.login_rounded),
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(_formatTimeForDisplay(start)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => selectDTime(false),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'End Time',
+                              prefixIcon: Icon(Icons.logout_rounded),
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(_formatTimeForDisplay(end)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameController.text.trim();
+                    if (name.isEmpty) return;
+                    
+                    try {
+                      final service = ref.read(attendanceServiceProvider);
+                      final newShift = await service.createShift({
+                        'shiftName': name,
+                        'startTime': start,
+                        'endTime': end,
+                        'gracePeriodMinutes': 15,
+                        'breakMinutes': 60,
+                        'isActive': true,
+                      });
+                      
+                      setState(() {
+                        _shifts.add(newShift);
+                        _selectedShiftId = newShift['_id'] ?? newShift['id'];
+                        _startTime = start;
+                        _endTime = end;
+                      });
+                      
+                      if (mounted) Navigator.pop(context);
+                    } catch (e) {
+                      debugPrint('Error creating shift template: $e');
+                    }
+                  },
+                  child: const Text('Add Template'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -482,24 +706,85 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                     const SizedBox(height: 16),
 
                     // Shifts Dropdown
-                    if (_shifts.isNotEmpty) ...[
-                      DropdownButtonFormField<String>(
-                        value: _selectedShiftId,
-                        decoration: const InputDecoration(
-                          labelText: 'Assigned Shift Duration',
-                          prefixIcon: Icon(Icons.schedule),
-                          border: OutlineInputBorder(),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedShiftId,
+                            decoration: const InputDecoration(
+                              labelText: 'Assigned Shift Duration',
+                              prefixIcon: Icon(Icons.schedule),
+                              border: OutlineInputBorder(),
+                            ),
+                            items: _shifts.where((s) => s['isActive'] == true || s['_id'] == _selectedShiftId).map((s) {
+                              final name = s['shiftName'] ?? 'Shift';
+                              final start = s['startTime'] ?? '00:00';
+                              final end = s['endTime'] ?? '00:00';
+                              return DropdownMenuItem<String>(
+                                value: s['_id'],
+                                child: Text('$name ($start - $end)'),
+                              );
+                            }).toList(),
+                            onChanged: (v) {
+                              setState(() {
+                                _selectedShiftId = v;
+                                if (v != null) {
+                                  final sel = _shifts.firstWhere((s) => s['_id'] == v);
+                                  _startTime = sel['startTime'] ?? '08:00';
+                                  _endTime = sel['endTime'] ?? '17:00';
+                                }
+                              });
+                            },
+                          ),
                         ),
-                        items: _shifts.map((s) {
-                          final name = s['shiftName'] ?? 'Shift';
-                          final start = s['startTime'] ?? '00:00';
-                          final end = s['endTime'] ?? '00:00';
-                          return DropdownMenuItem<String>(
-                            value: s['_id'],
-                            child: Text('$name ($start - $end)'),
-                          );
-                        }).toList(),
-                        onChanged: (v) => setState(() => _selectedShiftId = v),
+                        if (_isOwner) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle, color: Colors.blue),
+                            tooltip: 'Add Custom Shift Template',
+                            onPressed: _addNewShift,
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (_selectedShiftId != null) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _selectTime(true),
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: 'Shift Start Time',
+                                  prefixIcon: Icon(Icons.login_rounded),
+                                  border: OutlineInputBorder(),
+                                ),
+                                child: Text(
+                                  _formatTimeForDisplay(_startTime),
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _selectTime(false),
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: 'Shift End Time',
+                                  prefixIcon: Icon(Icons.logout_rounded),
+                                  border: OutlineInputBorder(),
+                                ),
+                                child: Text(
+                                  _formatTimeForDisplay(_endTime),
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                     ],

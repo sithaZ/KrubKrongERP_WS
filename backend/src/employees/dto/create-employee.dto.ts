@@ -55,4 +55,9 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsDateString()
   hireDate?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  shiftId?: string;
 }
+

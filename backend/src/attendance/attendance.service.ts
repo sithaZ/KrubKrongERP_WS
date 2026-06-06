@@ -455,13 +455,25 @@ export class AttendanceService {
     return this.attendanceModel
       .find(filter)
       .sort({ attendanceDate: -1, createdAt: -1 })
-      .populate('staffId')
-      .populate('employeeId')
+      .populate({
+        path: 'staffId',
+        populate: { path: 'shiftId' },
+      })
+      .populate({
+        path: 'employeeId',
+        populate: { path: 'shiftId' },
+      })
       .exec();
   }
 
   async findOne(id: string, currentUser: RequestUser) {
-    const attendance = await this.attendanceModel.findById(id).populate('staffId').exec();
+    const attendance = await this.attendanceModel
+      .findById(id)
+      .populate({
+        path: 'staffId',
+        populate: { path: 'shiftId' },
+      })
+      .exec();
     if (!attendance) {
       throw new NotFoundException(`Attendance with ID ${id} not found`);
     }
@@ -479,7 +491,10 @@ export class AttendanceService {
     return this.attendanceModel
       .find({ staffId: employee._id })
       .sort({ attendanceDate: -1, createdAt: -1 })
-      .populate('staffId')
+      .populate({
+        path: 'staffId',
+        populate: { path: 'shiftId' },
+      })
       .exec();
   }
 

@@ -131,4 +131,23 @@ class AttendanceService {
       throw ServerFailure(message: e.response?.data['message'] ?? 'Failed to get shifts');
     }
   }
+
+  Future<Map<String, dynamic>> createShift(Map<String, dynamic> data) async {
+    try {
+      final response = await _client.post('/attendance/shifts', data: data);
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ServerFailure(message: e.response?.data['message'] ?? 'Failed to create shift');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateShift(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _client.patch('/attendance/shifts/$id', data: data);
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ServerFailure(message: e.response?.data['message'] ?? 'Failed to update shift');
+    }
+  }
 }
+

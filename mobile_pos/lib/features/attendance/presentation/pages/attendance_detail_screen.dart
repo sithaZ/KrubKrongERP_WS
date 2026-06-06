@@ -372,6 +372,42 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                 ),
               ),
             ),
+            if (staff != null && staff['shiftName'] != null) ...[
+              const SizedBox(height: 12),
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                color: Colors.blue.shade50.withOpacity(0.15),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.schedule_rounded, color: Colors.blue, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Shift: ${staff['shiftName']}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Schedule: ${staff['shiftStartTime']} - ${staff['shiftEndTime']} (Grace Period: ${staff['shiftGracePeriodMinutes'] ?? 15} mins)',
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
 
             // 2. Summary Status & Spacing Metrics Grid

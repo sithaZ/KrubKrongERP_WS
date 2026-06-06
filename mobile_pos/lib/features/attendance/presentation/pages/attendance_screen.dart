@@ -14,6 +14,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/attendance_provider.dart';
 import '../../data/services/attendance_service.dart';
+import '../../../staff/domain/entities/employee.dart';
+import '../../../staff/presentation/providers/staff_provider.dart';
 
 class AttendanceScreen extends ConsumerWidget {
   const AttendanceScreen({
@@ -158,10 +160,96 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
     }
   }
 
+  Widget _buildLiveShiftStatus(Employee employee, ThemeData theme, bool isDark) {
+    if (employee.shiftStartTime == null) return const SizedBox.shrink();
+
+    final now = DateTime.now();
+    
+    try {
+      final parts = employee.shiftStartTime!.split(':');
+      if (parts.length == 2) {
+        final shiftStartHour = int.parse(parts[0]);
+        final shiftStartMin = int.parse(parts[1]);
+        
+        final grace = employee.shiftGracePeriodMinutes ?? 15;
+        
+        final shiftStart = DateTime(now.year, now.month, now.day, shiftStartHour, shiftStartMin);
+        final graceLimit = shiftStart.add(Duration(minutes: grace));
+        
+        final isLate = now.isAfter(graceLimit);
+        
+        return Container(
+          margin: const EdgeInsets.only(top: 14, bottom: 6),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.schedule_rounded, color: AppTheme.primary, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Your Shift: ${employee.shiftName ?? "Standard"}',
+                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${employee.shiftStartTime} - ${employee.shiftEndTime}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 20),
+              Row(
+                children: [
+                  const Text(
+                    'Current Lateness Status:',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isLate ? Colors.orange.withOpacity(0.12) : Colors.green.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isLate ? 'LATE (Check-in now)' : 'ON-TIME',
+                      style: TextStyle(
+                        color: isLate ? Colors.orange : Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error parsing live shift status: $e');
+    }
+    return const SizedBox.shrink();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final historyAsync = ref.watch(employeeAttendanceHistoryProvider(authState.user!.id));
+    final employeesAsync = ref.watch(employeesProvider);
 
     return Column(
       children: [
@@ -176,6 +264,18 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                 'Attendance Actions',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
+              ),
+              employeesAsync.when(
+                data: (employees) {
+                  if (employees.isEmpty) return const SizedBox.shrink();
+                  final employee = employees.firstWhere(
+                    (e) => e.userId == authState.user?.id || e.id == authState.user?.id,
+                    orElse: () => employees.first,
+                  );
+                  return _buildLiveShiftStatus(employee, Theme.of(context), Theme.of(context).brightness == Brightness.dark);
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 16),
               if (_isScanning)
@@ -273,14 +373,53 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                               ),
                             ),
                             title: Text(DateFormat('EEEE, MMM d').format(checkIn)),
-                            subtitle: Text(
-                              'In: ${DateFormat('hh:mm a').format(checkIn)}' +
-                              (checkOut != null ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}' : ' - Active'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'In: ${DateFormat('hh:mm a').format(checkIn)}' +
+                                  (checkOut != null ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}' : ' - Active'),
+                                ),
+                                if (record['staffId']?['shiftName'] != null) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Shift: ${record['staffId']['shiftName']} (${record['staffId']['shiftStartTime']} - ${record['staffId']['shiftEndTime']})',
+                                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                  ),
+                                ],
+                              ],
                             ),
-                            trailing: record['workedHours'] != null
-                                ? Text('${record['workedHours'].toStringAsFixed(1)}h', 
-                                    style: const TextStyle(fontWeight: FontWeight.bold))
-                                : const Text('...', style: TextStyle(color: Colors.green)),
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (record['workedHours'] != null)
+                                  Text('${record['workedHours'].toStringAsFixed(1)}h', 
+                                      style: const TextStyle(fontWeight: FontWeight.bold))
+                                else
+                                  const Text('...', style: TextStyle(color: Colors.green)),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (record['attendanceStatus'] == 'LATE' || record['status'] == 'late')
+                                        ? Colors.orange.withOpacity(0.12)
+                                        : Colors.green.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    (record['attendanceStatus'] ?? record['status'] ?? 'PRESENT').toString().toUpperCase(),
+                                    style: TextStyle(
+                                      color: (record['attendanceStatus'] == 'LATE' || record['status'] == 'late')
+                                          ? Colors.orange
+                                          : Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 9,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -583,9 +722,21 @@ class OwnerAttendanceView extends ConsumerWidget {
                                   child: Text(employeeName.substring(0, 1).toUpperCase()),
                                 ),
                                 title: Text(employeeName),
-                                subtitle: Text(
-                                  'In: ${DateFormat('hh:mm a').format(checkIn)}' +
-                                  (checkOut != null ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}' : ' - On-Site'),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'In: ${DateFormat('hh:mm a').format(checkIn)}' +
+                                      (checkOut != null ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}' : ' - On-Site'),
+                                    ),
+                                    if (record['staffId']?['shiftName'] != null) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Shift: ${record['staffId']['shiftName']} (${record['staffId']['shiftStartTime']} - ${record['staffId']['shiftEndTime']})',
+                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 trailing: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -595,6 +746,26 @@ class OwnerAttendanceView extends ConsumerWidget {
                                     if (record['workedHours'] != null)
                                       Text('${record['workedHours'].toStringAsFixed(1)}h', 
                                           style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: (record['attendanceStatus'] == 'LATE' || record['status'] == 'late')
+                                            ? Colors.orange.withOpacity(0.12)
+                                            : Colors.green.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        (record['attendanceStatus'] ?? record['status'] ?? 'PRESENT').toString().toUpperCase(),
+                                        style: TextStyle(
+                                          color: (record['attendanceStatus'] == 'LATE' || record['status'] == 'late')
+                                              ? Colors.orange
+                                              : Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 9,
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
