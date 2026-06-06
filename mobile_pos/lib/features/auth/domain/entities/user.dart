@@ -39,6 +39,12 @@ class User extends Equatable {
 
   bool get isStaff => isEmployee;
 
+  // Strict role checks to differentiate Owner vs Manager
+  bool get isStrictOwner => rawRole.toUpperCase() == 'OWNER';
+  bool get isStrictAdmin => rawRole.toUpperCase() == 'ADMIN';
+  bool get isStrictManager => rawRole.toUpperCase() == 'MANAGER';
+  bool get isOwnerOrAdmin => isStrictOwner || isStrictAdmin;
+
   String get roleLabel => rawRole.toUpperCase();
 
   String get displayName => name.isNotEmpty ? name : email.split('@').first;

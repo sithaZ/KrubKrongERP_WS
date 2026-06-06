@@ -163,6 +163,22 @@ export class AttendanceController {
     return this.attendanceService.updateShopSettings(dto);
   }
 
+  @Post('manual')
+  @Roles(Role.OWNER, Role.ADMIN)
+  createManual(@Body() dto: any, @Request() req: any) {
+    return this.attendanceService.createManual(dto, req.user);
+  }
+
+  @Get('record/:staffId/:date')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  findByStaffAndDate(
+    @Param('staffId') staffId: string,
+    @Param('date') date: string,
+    @Request() req: any,
+  ) {
+    return this.attendanceService.findByStaffAndDate(staffId, date, req.user);
+  }
+
   // ───────────────────────────────────────────────────────────────────────────
   // WILDCARD PARAMETERIZED ATTENDANCE DETAILS (DEFINED LAST)
   // ───────────────────────────────────────────────────────────────────────────
@@ -173,7 +189,7 @@ export class AttendanceController {
   }
 
   @Patch(':id')
-  @Roles(Role.MANAGER, Role.OWNER, Role.ADMIN)
+  @Roles(Role.OWNER, Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateAttendanceDto, @Request() req: any) {
     return this.attendanceService.update(id, dto, req.user);
   }

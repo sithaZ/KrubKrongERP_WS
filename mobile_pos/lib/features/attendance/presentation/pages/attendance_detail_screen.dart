@@ -269,7 +269,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
-    final isOwnerOrAdmin = (user?.isOwner ?? false) || (user?.isAdmin ?? false);
+    final isOwnerOrAdmin = user?.isOwnerOrAdmin ?? false;
 
     final staff = _currentRecord['staffId'] ?? _currentRecord['employeeId'];
     final employeeName = staff?['fullName'] ?? 'Staff Member';
@@ -298,14 +298,6 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Attendance Detail'),
-        actions: [
-          if (isOwnerOrAdmin)
-            IconButton(
-              icon: const Icon(Icons.edit_calendar),
-              tooltip: 'Correct Record',
-              onPressed: _showCorrectionDialog,
-            ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

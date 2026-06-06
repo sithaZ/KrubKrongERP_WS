@@ -150,6 +150,31 @@ class AttendanceService {
     }
   }
 
+  Future<Map<String, dynamic>?> getAttendanceByStaffAndDate(String staffId, String dateStr) async {
+    try {
+      final response = await _client.get('/attendance/record/$staffId/$dateStr');
+      final data = response.data;
+      if (data == null || (data is String && data.trim().isEmpty)) {
+        return null;
+      }
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      throw ServerFailure(message: e.response?.data['message'] ?? 'Failed to check daily attendance');
+    }
+  }
+
+  Future<void> saveManualAttendance(Map<String, dynamic> data) async {
+    try {
+      await _client.post('/attendance/manual', data: data);
+    } on DioException catch (e) {
+      throw ServerFailure(message: e.response?.data['message'] ?? 'Failed to save manual attendance');
+    }
+  }
+
   /// Self-attendance check-in (no QR token required, GPS + role validation only)
   Future<Map<String, dynamic>> selfCheckIn({
     required String employeeId,

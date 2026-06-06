@@ -592,6 +592,11 @@ export class AttendanceService {
   }
 
   async update(id: string, dto: UpdateAttendanceDto, currentUser: RequestUser) {
+    const userRole = currentUser.role?.toUpperCase();
+    if (userRole !== 'OWNER' && userRole !== 'ADMIN') {
+      throw new ForbiddenException('Only owners and administrators are allowed to edit or record manual attendance');
+    }
+
     const attendance = await this.attendanceModel.findById(id);
     if (!attendance) {
       throw new NotFoundException('Attendance not found');
@@ -964,5 +969,136 @@ export class AttendanceService {
       Object.assign(settings, dto);
     }
     return settings.save();
+  }
+
+  async findByStaffAndDate(staffId: string, dateStr: string, currentUser: RequestUser) {
+    const employee = await this.findAccessibleEmployee(staffId, currentUser);
+    return this.attendanceModel.findOne({
+      staffId: employee._id,
+      attendanceDate: dateStr,
+    }).exec();
+  }
+
+  async createManual(dto: any, currentUser: RequestUser) {
+    const userRole = currentUser.role?.toUpperCase();
+    if (userRole !== 'OWNER' && userRole !== 'ADMIN') {
+      throw new ForbiddenException('Only owners and administrators are allowed to create or edit manual attendance');
+    }
+
+    const employeeId = dto.staffId || dto.employeeId;
+    if (!employeeId) {
+      throw new BadRequestException('employeeId or staffId is required');
+    }
+
+    const employee = await this.employeeModel.findById(employeeId);
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const attendanceDate = dto.attendanceDate || this.getTodayString();
+
+    // Prevent future attendance records
+    const todayStr = this.getTodayString();
+    if (attendanceDate > todayStr) {
+      throw new BadRequestException('Cannot record attendance in the future');
+    }
+
+    // Check if record already exists
+    let attendance = await this.attendanceModel.findOne({
+      staffId: employee._id,
+      attendanceDate,
+    });
+
+    if (attendance) {
+      // If it exists, update it
+      return this.update(attendance._id.toString(), dto, currentUser);
+    }
+
+    // If it doesn't exist, create it
+    let shift: any = DEFAULT_SHIFT;
+    if (employee.shiftId) {
+      const assignedShift = await this.shiftModel.findById(employee.shiftId);
+      if (assignedShift && assignedShift.isActive) {
+        shift = assignedShift;
+      }
+    }
+
+    const checkInTime = dto.checkInTime ? new Date(dto.checkInTime) : undefined;
+    const checkOutTime = dto.checkOutTime ? new Date(dto.checkOutTime) : undefined;
+
+    let lateMinutes = 0;
+    if (checkInTime) {
+      const shiftStartTime = this.parseTime(shift.startTime, checkInTime);
+      const graceLimit = new Date(shiftStartTime.getTime() + shift.gracePeriodMinutes * 60 * 1000);
+      if (checkInTime > graceLimit) {
+        lateMinutes = Math.round((checkInTime.getTime() - shiftStartTime.getTime()) / (60 * 1000));
+      }
+    }
+
+    let workHours = 0;
+    let earlyLeaveMinutes = 0;
+    let overtimeHours = 0;
+
+    if (checkInTime && checkOutTime) {
+      const shiftStartTime = this.parseTime(shift.startTime, checkInTime);
+      const shiftEndTime = this.parseTime(shift.endTime, checkOutTime);
+
+      const diffMs = checkOutTime.getTime() - checkInTime.getTime();
+      const totalHours = Math.max(0, diffMs / (1000 * 60 * 60));
+      const breakHours = (shift.breakMinutes || 0) / 60;
+      const netWorkedHours = Math.max(0, totalHours - breakHours);
+
+      const shiftDurationMs = shiftEndTime.getTime() - shiftStartTime.getTime();
+      const shiftDurationHours = Math.max(0, (shiftDurationMs / (1000 * 60 * 60)) - breakHours);
+
+      workHours = Number(Math.min(netWorkedHours, shiftDurationHours).toFixed(2));
+      overtimeHours = Number(Math.max(0, netWorkedHours - shiftDurationHours).toFixed(2));
+
+      if (checkOutTime < shiftEndTime) {
+        earlyLeaveMinutes = Math.round((shiftEndTime.getTime() - checkOutTime.getTime()) / (60 * 1000));
+      }
+    }
+
+    const attendanceStatus = dto.attendanceStatus || (lateMinutes > 0 ? AttendanceStatus.LATE : AttendanceStatus.PRESENT);
+    let status = 'present';
+    if (attendanceStatus === AttendanceStatus.ABSENT) {
+      status = 'absent';
+    } else if (attendanceStatus === AttendanceStatus.HALF_DAY) {
+      status = 'half_day';
+    } else if (attendanceStatus === AttendanceStatus.LATE) {
+      status = 'late';
+    }
+
+    attendance = new this.attendanceModel({
+      employeeId: employee._id,
+      staffId: employee._id,
+      companyId: employee.companyId,
+      workDate: attendanceDate,
+      attendanceDate,
+      checkIn: checkInTime,
+      checkInTime,
+      checkOut: checkOutTime,
+      checkOutTime,
+      locationStatus: 'on_site',
+      status,
+      attendanceStatus,
+      lateMinutes,
+      earlyLeaveMinutes,
+      workHours,
+      workedHours: workHours,
+      overtimeHours,
+      note: dto.note || '',
+      source: 'manual',
+      correctionHistory: [{
+        correctedBy: new Types.ObjectId(currentUser.userId),
+        correctedAt: new Date(),
+        newCheckIn: checkInTime,
+        newCheckOut: checkOutTime,
+        newStatus: attendanceStatus,
+        reason: dto.note || 'Manual owner record creation',
+      }],
+    });
+
+    return attendance.save();
   }
 }

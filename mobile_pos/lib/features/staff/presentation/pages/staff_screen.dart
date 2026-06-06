@@ -7,10 +7,10 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../app/router/route_paths.dart';
 import '../providers/staff_provider.dart';
-import '../../../attendance/data/services/attendance_service.dart';
 import '../../../attendance/presentation/providers/attendance_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/employee.dart';
+import '../../../../core/errors/failures.dart';
 
 /// Staff management screen
 class StaffScreen extends ConsumerWidget {
@@ -207,6 +207,10 @@ class _EmployeeCard extends StatelessWidget {
           // Actions Menu Popup
           Consumer(
             builder: (context, ref, _) {
+              final authState = ref.watch(authProvider);
+              final user = authState.user;
+              final isOwnerOrAdmin = user?.isOwnerOrAdmin ?? false;
+
               return PopupMenuButton<String>(
                 icon: Icon(
                   Icons.more_vert_rounded,
@@ -219,6 +223,11 @@ class _EmployeeCard extends StatelessWidget {
                       context: context,
                       builder: (context) => EditStaffDialog(employee: employee),
                     );
+                  } else if (value == 'edit_attendance') {
+                    showDialog(
+                      context: context,
+                      builder: (context) => ManualAttendanceEditDialog(employee: employee),
+                    );
                   } else if (value == 'toggle_active') {
                     _confirmToggleActive(context, ref);
                   }
@@ -229,11 +238,22 @@ class _EmployeeCard extends StatelessWidget {
                     child: Row(
                       children: [
                         Icon(Icons.edit_outlined, size: 18),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text('Edit Staff'),
                       ],
                     ),
                   ),
+                  if (isOwnerOrAdmin)
+                    const PopupMenuItem(
+                      value: 'edit_attendance',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_calendar_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Edit Attendance'),
+                        ],
+                      ),
+                    ),
                   PopupMenuItem(
                     value: 'toggle_active',
                     child: Row(
@@ -872,6 +892,328 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
                 )
               : const Text('Save Changes'),
+        ),
+      ],
+    );
+  }
+}
+
+class ManualAttendanceEditDialog extends ConsumerStatefulWidget {
+  final dynamic employee;
+  const ManualAttendanceEditDialog({super.key, required this.employee});
+
+  @override
+  ConsumerState<ManualAttendanceEditDialog> createState() => _ManualAttendanceEditDialogState();
+}
+
+class _ManualAttendanceEditDialogState extends ConsumerState<ManualAttendanceEditDialog> {
+  late DateTime _selectedDate;
+  bool _fetchingRecord = false;
+  bool _saving = false;
+  Map<String, dynamic>? _existingRecord;
+
+  late TextEditingController _checkInController;
+  late TextEditingController _checkOutController;
+  late TextEditingController _noteController;
+  String _selectedStatus = 'PRESENT';
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = DateTime.now();
+    _checkInController = TextEditingController();
+    _checkOutController = TextEditingController();
+    _noteController = TextEditingController();
+    
+    // Fetch initial record for today
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchDailyRecord();
+    });
+  }
+
+  @override
+  void dispose() {
+    _checkInController.dispose();
+    _checkOutController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchDailyRecord() async {
+    setState(() {
+      _fetchingRecord = true;
+      _existingRecord = null;
+    });
+
+    try {
+      final service = ref.read(attendanceServiceProvider);
+      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final record = await service.getAttendanceByStaffAndDate(widget.employee.id, dateStr);
+
+      if (mounted) {
+        setState(() {
+          _existingRecord = record;
+          if (record != null) {
+            _selectedStatus = record['attendanceStatus'] ?? 'PRESENT';
+            _noteController.text = record['note'] ?? '';
+
+            DateTime? inTime;
+            if (record['checkInTime'] != null) {
+              inTime = DateTime.parse(record['checkInTime']);
+            } else if (record['checkIn'] != null) {
+              inTime = DateTime.parse(record['checkIn']);
+            }
+            _checkInController.text = inTime != null ? DateFormat('HH:mm').format(inTime) : '';
+
+            DateTime? outTime;
+            if (record['checkOutTime'] != null) {
+              outTime = DateTime.parse(record['checkOutTime']);
+            } else if (record['checkOut'] != null) {
+              outTime = DateTime.parse(record['checkOut']);
+            }
+            _checkOutController.text = outTime != null ? DateFormat('HH:mm').format(outTime) : '';
+          } else {
+            // Reset fields
+            _selectedStatus = 'PRESENT';
+            _checkInController.text = '';
+            _checkOutController.text = '';
+            _noteController.text = '';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading record: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _fetchingRecord = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+      _fetchDailyRecord();
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final service = ref.read(attendanceServiceProvider);
+      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+
+      final payload = <String, dynamic>{
+        'employeeId': widget.employee.id,
+        'staffId': widget.employee.id,
+        'attendanceDate': dateStr,
+        'attendanceStatus': _selectedStatus,
+        'note': _noteController.text.trim(),
+      };
+
+      if (_checkInController.text.isNotEmpty) {
+        payload['checkInTime'] = '${dateStr}T${_checkInController.text}:00.000Z';
+        payload['checkIn'] = payload['checkInTime'];
+      } else {
+        payload['checkInTime'] = null;
+        payload['checkIn'] = null;
+      }
+
+      if (_checkOutController.text.isNotEmpty) {
+        payload['checkOutTime'] = '${dateStr}T${_checkOutController.text}:00.000Z';
+        payload['checkOut'] = payload['checkOutTime'];
+      } else {
+        payload['checkOutTime'] = null;
+        payload['checkOut'] = null;
+      }
+
+      await service.saveManualAttendance(payload);
+
+      // Invalidate attendance providers to force reload of listings
+      ref.invalidate(attendanceRecordsProvider);
+      ref.invalidate(employeeAttendanceHistoryProvider(widget.employee.id));
+
+      if (mounted) {
+        Navigator.pop(context);
+        ModernAlert.show(
+          context,
+          title: 'Success!',
+          message: 'Attendance saved successfully.',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
+        );
+      }
+    } catch (e) {
+      final display = e is Failure ? e.message : e.toString();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $display'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.edit_calendar_rounded, color: AppTheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Edit Attendance',
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Managing attendance for: ${widget.employee.fullName}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              
+              // Date picker selector button
+              InkWell(
+                onTap: _fetchingRecord ? null : _selectDate,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 18, color: Colors.blue),
+                      const SizedBox(width: 10),
+                      Text(
+                        DateFormat('EEEE, MMMM d, yyyy').format(_selectedDate),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              if (_fetchingRecord)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else ...[
+                DropdownButtonFormField<String>(
+                  value: _selectedStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Attendance Status',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'LEAVE', 'HOLIDAY']
+                      .map((role) => DropdownMenuItem(
+                            value: role,
+                            child: Text(role),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedStatus = val);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _checkInController,
+                  decoration: const InputDecoration(
+                    labelText: 'Check-In Time (HH:mm)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.login),
+                    hintText: 'e.g. 08:30',
+                  ),
+                  keyboardType: TextInputType.datetime,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _checkOutController,
+                  decoration: const InputDecoration(
+                    labelText: 'Check-Out Time (HH:mm)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.logout),
+                    hintText: 'e.g. 17:30',
+                  ),
+                  keyboardType: TextInputType.datetime,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Reason / Note',
+                    border: OutlineInputBorder(),
+                    hintText: 'Enter note or adjustment reason',
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _existingRecord != null 
+                      ? 'Note: An attendance record already exists for this date. Saving will overwrite the record.'
+                      : 'Note: No record exists for this date. Saving will create a new manual log.',
+                  style: TextStyle(
+                    fontSize: 11, 
+                    color: _existingRecord != null ? Colors.orange.shade800 : Colors.blue.shade800,
+                    fontStyle: FontStyle.italic
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _fetchingRecord || _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Save'),
         ),
       ],
     );
