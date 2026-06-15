@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/core.dart';
 
 /// Custom auth text field with consistent styling
 class AuthTextField extends StatelessWidget {
@@ -58,8 +59,8 @@ class AuthTextField extends StatelessWidget {
         color: colorScheme.onSurface,
       ),
       decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
+        labelText: context.tr(label),
+        hintText: context.tr(hint),
         prefixIcon: prefixIcon != null
             ? Icon(
                 prefixIcon,

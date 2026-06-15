@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/core.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/presentation/widgets/profile_bottom_sheet.dart';
-import '../../../../core/widgets/common_widgets.dart';
 
 class MoreHubScreen extends ConsumerWidget {
   const MoreHubScreen({super.key});
@@ -15,6 +14,7 @@ class MoreHubScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final user = ref.watch(currentUserProvider);
+    final l10n = context.l10n;
 
     // RBAC: check permissions
     final isOwner = user?.rawRole.toUpperCase() == 'OWNER' || user?.rawRole.toUpperCase() == 'ADMIN';
@@ -28,43 +28,43 @@ class MoreHubScreen extends ConsumerWidget {
       items.addAll([
         _MoreItem(
           icon: Icons.people_outline_rounded,
-          title: 'Staff Management',
-          subtitle: 'Workforce directory and team member status.',
+          title: l10n.staffManagement,
+          subtitle: l10n.staffManagementSubtitle,
           route: AppRoutePaths.staffList,
           color: AppTheme.primary,
         ),
         _MoreItem(
           icon: Icons.calendar_today_rounded,
-          title: 'Staff Attendance',
-          subtitle: 'Daily check-in activity and GPS logs.',
+          title: l10n.staffAttendance,
+          subtitle: l10n.staffAttendanceSubtitle,
           route: AppRoutePaths.attendance,
           color: AppTheme.success,
         ),
         _MoreItem(
           icon: Icons.payments_outlined,
-          title: 'Payroll Summary',
-          subtitle: 'Monthly compensation plans and payouts.',
+          title: l10n.payrollSummary,
+          subtitle: l10n.payrollSummarySubtitle,
           route: AppRoutePaths.payroll,
           color: Colors.deepPurple,
         ),
         _MoreItem(
           icon: Icons.time_to_leave_outlined,
-          title: 'Leave Management',
-          subtitle: 'Track team leave requests and time-off.',
+          title: l10n.leaveManagement,
+          subtitle: l10n.leaveManagementSubtitle,
           route: AppRoutePaths.leaveManagement,
           color: Colors.teal,
         ),
         _MoreItem(
           icon: Icons.notifications_active_outlined,
-          title: 'Notifications',
-          subtitle: 'System updates and business notifications.',
+          title: l10n.notifications,
+          subtitle: l10n.notificationsSubtitle,
           route: AppRoutePaths.notifications,
           color: AppTheme.warning,
         ),
         _MoreItem(
           icon: Icons.settings_outlined,
-          title: 'Shop Settings',
-          subtitle: 'Manage coordinates, radius, and business details.',
+          title: l10n.shopSettings,
+          subtitle: l10n.shopSettingsSubtitle,
           route: AppRoutePaths.settings,
           color: Colors.blueGrey,
         ),
@@ -73,15 +73,15 @@ class MoreHubScreen extends ConsumerWidget {
       items.addAll([
         _MoreItem(
           icon: Icons.people_outline_rounded,
-          title: 'Staff Directory',
-          subtitle: 'View your workforce directory and status.',
+          title: l10n.staffDirectory,
+          subtitle: l10n.staffDirectorySubtitle,
           route: AppRoutePaths.staffList,
           color: AppTheme.primary,
         ),
         _MoreItem(
           icon: Icons.calendar_today_rounded,
-          title: 'Attendance Monitor',
-          subtitle: 'Monitor clock-in and out timestamps.',
+          title: l10n.attendanceMonitor,
+          subtitle: l10n.attendanceMonitorSubtitle,
           route: AppRoutePaths.attendance,
           color: AppTheme.success,
         ),
@@ -91,29 +91,29 @@ class MoreHubScreen extends ConsumerWidget {
       items.addAll([
         _MoreItem(
           icon: Icons.today_outlined,
-          title: 'My Attendance',
-          subtitle: 'Clock in, check out, and track shift history.',
+          title: l10n.myAttendance,
+          subtitle: l10n.myAttendanceSubtitle,
           route: AppRoutePaths.attendance,
           color: AppTheme.success,
         ),
         _MoreItem(
           icon: Icons.payments_outlined,
-          title: 'My Payroll',
-          subtitle: 'Review personal payslips and compensation.',
+          title: l10n.myPayroll,
+          subtitle: l10n.myPayrollSubtitle,
           route: AppRoutePaths.payroll,
           color: Colors.deepPurple,
         ),
         _MoreItem(
           icon: Icons.notifications_active_outlined,
-          title: 'My Notifications',
-          subtitle: 'Check personal updates and system alerts.',
+          title: l10n.myNotifications,
+          subtitle: l10n.myNotificationsSubtitle,
           route: AppRoutePaths.notifications,
           color: AppTheme.warning,
         ),
         _MoreItem(
           icon: Icons.settings_outlined,
-          title: 'App Settings',
-          subtitle: 'Preferences and user configurations.',
+          title: l10n.appSettings,
+          subtitle: l10n.appSettingsSubtitle,
           route: AppRoutePaths.settings,
           color: Colors.blueGrey,
         ),
@@ -127,7 +127,7 @@ class MoreHubScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
-        title: const Text('More'),
+        title: Text(l10n.more),
         actions: [
           GestureDetector(
             onTap: () => ProfileBottomSheet.show(context),
@@ -182,12 +182,12 @@ class MoreHubScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user?.name ?? 'User Name',
+                        user?.name ?? l10n.userNameFallback,
                         style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        user?.email ?? 'No email',
+                        user?.email ?? l10n.noEmail,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                         ),
@@ -207,7 +207,7 @@ class MoreHubScreen extends ConsumerWidget {
 
           // ── Menu List ──────────────────────────────
           Text(
-            isStaff ? 'My Account' : 'Management & Account',
+            isStaff ? l10n.myAccount : l10n.managementAndAccount,
             style: theme.textTheme.labelMedium?.copyWith(
               color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
               letterSpacing: 0.8,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../core.dart';
 
 // ─────────────────────────────────────────────
 //  Loading Indicator
@@ -145,7 +145,7 @@ class AppErrorWidget extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Something went wrong',
+              context.tr('Something went wrong'),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -164,7 +164,7 @@ class AppErrorWidget extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(retryLabel ?? 'Try Again'),
+                label: Text(retryLabel ?? context.tr('Try Again')),
               ),
             ],
           ],
@@ -427,7 +427,7 @@ class ModernAlert {
                       backgroundColor: resolvedIconColor,
                       foregroundColor: Colors.white,
                     ),
-                    child: Text(confirmLabel ?? 'Got it'),
+                    child: Text(confirmLabel ?? context.tr('Got it')),
                   ),
                 ),
               ],
@@ -441,11 +441,11 @@ class ModernAlert {
   static void showError(BuildContext context, String message) {
     show(
       context,
-      title: 'Login Failed',
+      title: context.tr('Login Failed'),
       message: message,
       icon: Icons.error_outline_rounded,
       iconColor: AppTheme.error,
-      confirmLabel: 'Try Again',
+      confirmLabel: context.tr('Try Again'),
     );
   }
 }

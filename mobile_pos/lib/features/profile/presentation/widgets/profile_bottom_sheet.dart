@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/core.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/domain/entities/user.dart';
 
@@ -22,9 +21,11 @@ class ProfileBottomSheet extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final isDark = theme.brightness == Brightness.dark;
     final bg = isDark ? AppTheme.darkSurface : AppTheme.lightSurface;
     final border = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
+    final currentLocale = ref.watch(appLocaleProvider);
 
     return Container(
       decoration: BoxDecoration(
@@ -80,12 +81,12 @@ class ProfileBottomSheet extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user?.name ?? 'User Name',
+                        user?.name ?? l10n.userNameFallback,
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        user?.email ?? 'No email',
+                        user?.email ?? l10n.noEmail,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                         ),
@@ -109,7 +110,7 @@ class ProfileBottomSheet extends ConsumerWidget {
           // Menu items
           _MenuItem(
             icon: Icons.person_outline_rounded,
-            label: 'Edit Profile',
+            label: l10n.editProfile,
             isDark: isDark,
             onTap: () {
               if (user != null) {
@@ -123,19 +124,19 @@ class ProfileBottomSheet extends ConsumerWidget {
           ),
           _MenuItem(
             icon: Icons.language_rounded,
-            label: 'Language',
+            label: l10n.language,
             trailing: Text(
-              'English',
+              currentLocale.nativeLabel,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
               ),
             ),
             isDark: isDark,
-            onTap: () {},
+            onTap: () => _showLanguageSheet(context, ref),
           ),
           _MenuItem(
             icon: Icons.storefront_rounded,
-            label: 'Switch Shop',
+            label: l10n.switchShop,
             isDark: isDark,
             onTap: () {},
           ),
@@ -145,7 +146,7 @@ class ProfileBottomSheet extends ConsumerWidget {
           // Logout
           _MenuItem(
             icon: Icons.logout_rounded,
-            label: 'Sign Out',
+            label: l10n.signOut,
             color: AppTheme.error,
             isDark: isDark,
             onTap: () {
@@ -165,13 +166,96 @@ class ProfileBottomSheet extends ConsumerWidget {
   void _showLogoutDialog(BuildContext context, VoidCallback onConfirmLogout) {
     ModernAlert.show(
       context,
-      title: 'Sign Out',
-      message: 'Are you sure you want to sign out of your account?',
+      title: context.l10n.signOutTitle,
+      message: context.l10n.signOutMessage,
       icon: Icons.logout_rounded,
       iconColor: AppTheme.error,
-      confirmLabel: 'Sign Out',
-      cancelLabel: 'Cancel',
+      confirmLabel: context.l10n.signOut,
+      cancelLabel: context.l10n.cancel,
       onConfirm: onConfirmLogout,
+    );
+  }
+
+  void _showLanguageSheet(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final currentLocale = ref.read(appLocaleProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bg = isDark ? AppTheme.darkSurface : AppTheme.lightSurface;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.chooseLanguage,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.chooseLanguageHint,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.lightTextSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...AppLocale.values.map((locale) {
+                  final selected = locale == currentLocale;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppTheme.primary.withOpacity(0.08)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: selected ? AppTheme.primary : border,
+                      ),
+                    ),
+                    child: RadioListTile<AppLocale>(
+                      value: locale,
+                      groupValue: currentLocale,
+                      activeColor: AppTheme.primary,
+                      title: Text(locale.nativeLabel),
+                      subtitle: Text(locale.englishLabel),
+                      onChanged: (value) async {
+                        if (value == null) {
+                          return;
+                        }
+                        await ref.read(appLocaleProvider.notifier).setLocale(value);
+                        if (sheetContext.mounted) {
+                          Navigator.pop(sheetContext);
+                        }
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(context.l10n.languageUpdated)),
+                          );
+                        }
+                      },
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -244,9 +328,10 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return AlertDialog(
-      title: const Text('Edit Profile'),
+      title: Text(l10n.editProfile),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       content: SingleChildScrollView(
         child: Form(
@@ -256,18 +341,18 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  prefixIcon: Icon(Icons.person_outline_rounded),
+                decoration: InputDecoration(
+                  labelText: l10n.fullName,
+                  prefixIcon: const Icon(Icons.person_outline_rounded),
                 ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Name cannot be empty' : null,
+                validator: (val) => val == null || val.trim().isEmpty ? l10n.nameRequired : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  prefixIcon: Icon(Icons.phone_outlined),
+                decoration: InputDecoration(
+                  labelText: l10n.phoneNumber,
+                  prefixIcon: const Icon(Icons.phone_outlined),
                 ),
                 keyboardType: TextInputType.phone,
               ),
@@ -288,13 +373,13 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                 );
               },
               icon: const Icon(Icons.lock_outline_rounded, size: 16),
-              label: const Text('Change Password'),
+              label: Text(l10n.changePassword),
             ),
             Row(
               children: [
                 TextButton(
                   onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.cancel),
                 ),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _saveProfile,
@@ -303,7 +388,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                   ),
                   child: _isLoading
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Save'),
+                      : Text(l10n.save),
                 ),
               ],
             ),
@@ -328,8 +413,8 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
         if (mounted) {
           Navigator.pop(context); // Close dialog
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile updated successfully!'),
+            SnackBar(
+              content: Text(context.l10n.profileUpdatedSuccess),
               backgroundColor: Colors.green,
             ),
           );
@@ -339,7 +424,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
           final failure = ref.read(authProvider).failure;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(failure?.message ?? 'Failed to update profile'),
+              content: Text(failure?.message ?? context.l10n.profileUpdateFailed),
               backgroundColor: Colors.red,
             ),
           );
@@ -388,10 +473,10 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return AlertDialog(
-      title: const Text('Change Password'),
+      title: Text(l10n.changePassword),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       content: SingleChildScrollView(
         child: Form(
@@ -403,21 +488,21 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                 controller: _currentPasswordController,
                 obscureText: _obscureCurrent,
                 decoration: InputDecoration(
-                  labelText: 'Current Password',
+                  labelText: l10n.currentPassword,
                   prefixIcon: const Icon(Icons.lock_person_outlined),
                   suffixIcon: IconButton(
                     icon: Icon(_obscureCurrent ? Icons.visibility_off : Icons.visibility),
                     onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
                   ),
                 ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Current password is required' : null,
+                validator: (val) => val == null || val.trim().isEmpty ? l10n.currentPasswordRequired : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _newPasswordController,
                 obscureText: _obscureNew,
                 decoration: InputDecoration(
-                  labelText: 'New Password',
+                  labelText: l10n.newPassword,
                   prefixIcon: const Icon(Icons.lock_outline_rounded),
                   suffixIcon: IconButton(
                     icon: Icon(_obscureNew ? Icons.visibility_off : Icons.visibility),
@@ -426,10 +511,10 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
-                    return 'New password is required';
+                    return l10n.newPasswordRequired;
                   }
                   if (val.length < 6) {
-                    return 'Password must be at least 6 characters';
+                    return l10n.passwordTooShort;
                   }
                   return null;
                 },
@@ -439,7 +524,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirm,
                 decoration: InputDecoration(
-                  labelText: 'Confirm New Password',
+                  labelText: l10n.confirmNewPassword,
                   prefixIcon: const Icon(Icons.lock_outline_rounded),
                   suffixIcon: IconButton(
                     icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
@@ -448,7 +533,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                 ),
                 validator: (val) {
                   if (val != _newPasswordController.text) {
-                    return 'Passwords do not match';
+                    return l10n.passwordsDoNotMatch;
                   }
                   return null;
                 },
@@ -460,7 +545,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _submit,
@@ -469,7 +554,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
           ),
           child: _isLoading
               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Change'),
+              : Text(l10n.change),
         ),
       ],
     );
@@ -490,8 +575,8 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Password changed successfully!'),
+            SnackBar(
+              content: Text(context.l10n.passwordChangedSuccess),
               backgroundColor: Colors.green,
             ),
           );
@@ -501,7 +586,7 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
           final failure = ref.read(authProvider).failure;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(failure?.message ?? 'Failed to change password'),
+              content: Text(failure?.message ?? context.l10n.passwordChangeFailed),
               backgroundColor: Colors.red,
             ),
           );

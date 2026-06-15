@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/core.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../domain/entities/employee.dart';
@@ -138,18 +139,18 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Add Custom Position'),
+          title: Text(context.tr('Add Custom Position')),
           content: TextField(
             controller: textController,
-            decoration: const InputDecoration(
-              labelText: 'Position Name',
+            decoration: InputDecoration(
+              labelText: context.tr('Position Name'),
               border: OutlineInputBorder(),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -170,7 +171,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                   if (mounted) Navigator.pop(context);
                 }
               },
-              child: const Text('Add'),
+              child: Text(context.tr('Add')),
             ),
           ],
         );
@@ -184,18 +185,18 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Add Custom Department'),
+          title: Text(context.tr('Add Custom Department')),
           content: TextField(
             controller: textController,
-            decoration: const InputDecoration(
-              labelText: 'Department Name',
+            decoration: InputDecoration(
+              labelText: context.tr('Department Name'),
               border: OutlineInputBorder(),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -215,7 +216,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                   if (mounted) Navigator.pop(context);
                 }
               },
-              child: const Text('Add'),
+              child: Text(context.tr('Add')),
             ),
           ],
         );
@@ -252,14 +253,14 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
             }
 
             return AlertDialog(
-              title: const Text('Add Shift Template'),
+              title: Text(context.tr('Add Shift Template')),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Shift Name (e.g. Morning, Afternoon)',
+                    decoration: InputDecoration(
+                      labelText: context.tr('Shift Name (e.g. Morning, Afternoon)'),
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -270,8 +271,8 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                         child: InkWell(
                           onTap: () => selectDTime(true),
                           child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'Start Time',
+                            decoration: InputDecoration(
+                              labelText: context.tr('Start Time'),
                               prefixIcon: Icon(Icons.login_rounded),
                               border: OutlineInputBorder(),
                             ),
@@ -284,8 +285,8 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                         child: InkWell(
                           onTap: () => selectDTime(false),
                           child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'End Time',
+                            decoration: InputDecoration(
+                              labelText: context.tr('End Time'),
                               prefixIcon: Icon(Icons.logout_rounded),
                               border: OutlineInputBorder(),
                             ),
@@ -300,7 +301,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(context.tr('Cancel')),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -330,7 +331,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                       debugPrint('Error creating shift template: $e');
                     }
                   },
-                  child: const Text('Add Template'),
+                  child: Text(context.tr('Add Template')),
                 ),
               ],
             );
@@ -380,7 +381,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to customize shift timing: $e'),
+              content: Text('${context.tr('Failed to customize shift timing:')} $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -459,13 +460,13 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
 
     ModernAlert.show(
       context,
-      title: 'Staff Added Successfully',
-      message: 'Please share these login credentials with the employee:\n\n'
+      title: context.tr('Staff Added Successfully'),
+      message: '${context.tr('Please share these login credentials with the employee:')}\n\n'
           'Login Email: $email\n'
           'Password: $password',
       icon: Icons.check_circle_outline,
       iconColor: Colors.green,
-      confirmLabel: 'Copy & Done',
+      confirmLabel: context.tr('Copy & Done'),
       onConfirm: () async {
         try {
           final data = 'Login Email: $email\nPassword: $password';
@@ -474,7 +475,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Credentials copied to clipboard!'),
+                content: Text(context.tr('Credentials copied to clipboard!')),
                 backgroundColor: Colors.green.shade700,
                 behavior: SnackBarBehavior.floating,
               ),
@@ -499,11 +500,11 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add New Staff'),
+        title: Text(context.tr('Add New Staff')),
       ),
       body: LoadingOverlay(
         isLoading: staffState.isLoading || _loadingShifts,
-        message: 'Loading metadata & onboarding staff...',
+        message: context.tr('Loading metadata & onboarding staff...'),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
@@ -511,18 +512,18 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildSectionTitle(theme, 'Personal Information'),
+                _buildSectionTitle(theme, context.tr('Personal Information')),
                 const SizedBox(height: 16),
                 _buildTextField(
                   controller: _nameController,
-                  label: 'Full Name',
+                  label: context.tr('Full Name'),
                   icon: Icons.person_outline,
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  validator: (v) => v?.isEmpty ?? true ? context.tr('Required') : null,
                 ),
                 const SizedBox(height: 16),
                 _buildTextField(
                   controller: _emailController,
-                  label: 'Email Address',
+                  label: context.tr('Email Address'),
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                   validator: Validators.email,
@@ -530,7 +531,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                 const SizedBox(height: 16),
                 _buildTextField(
                   controller: _phoneController,
-                  label: 'Phone Number (Optional)',
+                  label: context.tr('Phone Number (Optional)'),
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                 ),
@@ -540,11 +541,11 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                   controller: _hireDateController,
                   readOnly: true,
                   onTap: _selectHireDate,
-                  decoration: _inputDecoration('Hire Date', Icons.calendar_today),
+                  decoration: _inputDecoration(context.tr('Hire Date'), Icons.calendar_today),
                 ),
                 const SizedBox(height: 32),
 
-                _buildSectionTitle(theme, 'Work & Scheduling Info'),
+                _buildSectionTitle(theme, context.tr('Work & Scheduling Info')),
                 const SizedBox(height: 16),
 
                 // Shift Selection Dropdown
@@ -553,7 +554,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _selectedShiftId,
-                        decoration: _inputDecoration('Assign Shift', Icons.schedule),
+                        decoration: _inputDecoration(context.tr('Assign Shift'), Icons.schedule),
                         items: _shifts.where((s) => s['isActive'] == true).map((s) {
                           final name = s['shiftName'] ?? 'Shift';
                           final start = s['startTime'] ?? '00:00';
@@ -573,14 +574,14 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                             }
                           });
                         },
-                        validator: (v) => v == null ? 'Please assign a shift' : null,
+                        validator: (v) => v == null ? context.tr('Please assign a shift') : null,
                       ),
                     ),
                     if (_isOwner) ...[
                       const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.add_circle, color: Colors.blue),
-                        tooltip: 'Add Custom Shift Template',
+                        tooltip: context.tr('Add Custom Shift Template'),
                         onPressed: _addNewShift,
                       ),
                     ],
@@ -594,7 +595,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                         child: InkWell(
                           onTap: () => _selectTime(true),
                           child: InputDecorator(
-                            decoration: _inputDecoration('Shift Start Time', Icons.login_rounded),
+                            decoration: _inputDecoration(context.tr('Shift Start Time'), Icons.login_rounded),
                             child: Text(
                               _formatTimeForDisplay(_startTime),
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
@@ -607,7 +608,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                         child: InkWell(
                           onTap: () => _selectTime(false),
                           child: InputDecorator(
-                            decoration: _inputDecoration('Shift End Time', Icons.logout_rounded),
+                            decoration: _inputDecoration(context.tr('Shift End Time'), Icons.logout_rounded),
                             child: Text(
                               _formatTimeForDisplay(_endTime),
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
@@ -628,7 +629,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                         value: _selectedPosition.isNotEmpty && _allowedPositions.contains(_selectedPosition)
                             ? _selectedPosition
                             : (_allowedPositions.isNotEmpty ? _allowedPositions.first : null),
-                        decoration: _inputDecoration('Position', Icons.work_outline),
+                        decoration: _inputDecoration(context.tr('Position'), Icons.work_outline),
                         items: _allowedPositions.map((pos) {
                           return DropdownMenuItem<String>(
                             value: pos,
@@ -644,7 +645,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                       const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.add_circle, color: Colors.blue),
-                        tooltip: 'Add Custom Position',
+                        tooltip: context.tr('Add Custom Position'),
                         onPressed: _addNewPosition,
                       ),
                     ],
@@ -660,7 +661,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                         value: _selectedDepartment.isNotEmpty && _allowedDepartments.contains(_selectedDepartment)
                             ? _selectedDepartment
                             : (_allowedDepartments.isNotEmpty ? _allowedDepartments.first : null),
-                        decoration: _inputDecoration('Department', Icons.business_outlined),
+                        decoration: _inputDecoration(context.tr('Department'), Icons.business_outlined),
                         items: _allowedDepartments.map((dept) {
                           return DropdownMenuItem<String>(
                             value: dept,
@@ -676,7 +677,7 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                       const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.add_circle, color: Colors.blue),
-                        tooltip: 'Add Custom Department',
+                        tooltip: context.tr('Add Custom Department'),
                         onPressed: _addNewDepartment,
                       ),
                     ],
@@ -686,10 +687,10 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
 
                 // Owner Settings Checkboxes for Manager Defaults
                 if (_isOwner) ...[
-                  _buildSectionTitle(theme, 'Default Settings (Options for Managers)'),
+                  _buildSectionTitle(theme, context.tr('Default Settings (Options for Managers)')),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Select which positions and departments your managers are allowed to assign to new staff:',
+                  Text(
+                    context.tr('Select which positions and departments your managers are allowed to assign to new staff:'),
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 8),
@@ -704,10 +705,10 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: Text(
-                              'Allowed Positions:',
+                              context.tr('Allowed Positions:'),
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blue),
                             ),
                           ),
@@ -731,10 +732,10 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                             );
                           }),
                           const Divider(),
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: Text(
-                              'Allowed Departments:',
+                              context.tr('Allowed Departments:'),
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blue),
                             ),
                           ),
@@ -764,24 +765,24 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                   const SizedBox(height: 32),
                 ],
 
-                _buildSectionTitle(theme, 'Salary Details'),
+                _buildSectionTitle(theme, context.tr('Salary Details')),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _salaryType,
-                  decoration: _inputDecoration('Salary Type', Icons.payments_outlined),
-                  items: const [
-                    DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                    DropdownMenuItem(value: 'daily', child: Text('Daily')),
+                  decoration: _inputDecoration(context.tr('Salary Type'), Icons.payments_outlined),
+                  items: [
+                    DropdownMenuItem(value: 'monthly', child: Text(context.tr('Monthly'))),
+                    DropdownMenuItem(value: 'daily', child: Text(context.tr('Daily'))),
                   ],
                   onChanged: (v) => setState(() => _salaryType = v!),
                 ),
                 const SizedBox(height: 16),
                 _buildTextField(
                   controller: _salaryController,
-                  label: 'Base Salary',
+                  label: context.tr('Base Salary'),
                   icon: Icons.attach_money,
                   keyboardType: TextInputType.number,
-                  validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid amount' : null,
+                  validator: (v) => double.tryParse(v ?? '') == null ? context.tr('Invalid amount') : null,
                 ),
                 const SizedBox(height: 48),
                 ElevatedButton(
@@ -790,7 +791,10 @@ class _AddStaffScreenState extends ConsumerState<AddStaffScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Create Staff Account', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    context.tr('Create Staff Account'),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
                 if (staffState.error != null) ...[
                   const SizedBox(height: 16),

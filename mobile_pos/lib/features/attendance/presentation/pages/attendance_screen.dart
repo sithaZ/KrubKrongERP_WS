@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/router/route_paths.dart';
+import '../../../../core/core.dart';
 import '../../../../core/providers/core_providers.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/errors/failures.dart';
@@ -47,7 +48,7 @@ class AttendanceScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Attendance'),
+        title: Text(context.tr('Attendance')),
       ),
       body: body,
     );
@@ -125,8 +126,8 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Success!',
-          message: 'You have clocked in successfully.',
+          title: context.tr('Success!'),
+          message: context.tr('You have clocked in successfully.'),
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
         );
@@ -136,7 +137,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Error',
+          title: context.tr('Error'),
           message: displayMessage,
           icon: Icons.error_outline,
           iconColor: Colors.red,
@@ -178,8 +179,8 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Success!',
-          message: 'You have self-clocked in successfully.',
+          title: context.tr('Success!'),
+          message: context.tr('You have self-clocked in successfully.'),
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
         );
@@ -189,7 +190,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Error',
+          title: context.tr('Error'),
           message: displayMessage,
           icon: Icons.error_outline,
           iconColor: Colors.red,
@@ -227,8 +228,8 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Success!',
-          message: 'You have clocked out successfully.',
+          title: context.tr('Success!'),
+          message: context.tr('You have clocked out successfully.'),
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
         );
@@ -238,7 +239,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Error',
+          title: context.tr('Error'),
           message: displayMessage,
           icon: Icons.error_outline,
           iconColor: Colors.red,
@@ -290,7 +291,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Your Shift: ${employee.shiftName ?? "Standard"}',
+                      '${context.tr('Your Shift:')} ${employee.shiftName ?? context.tr('Standard')}',
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
@@ -311,8 +312,8 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
               const Divider(height: 20),
               Row(
                 children: [
-                  const Text(
-                    'Current Lateness Status:',
+                  Text(
+                    context.tr('Current Lateness Status:'),
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const Spacer(),
@@ -326,7 +327,9 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isLate ? 'LATE (Check-in now)' : 'ON-TIME',
+                      isLate
+                          ? context.tr('LATE (Check-in now)')
+                          : context.tr('ON-TIME'),
                       style: TextStyle(
                         color: isLate ? Colors.orange : Colors.green,
                         fontWeight: FontWeight.bold,
@@ -362,8 +365,8 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
             children: [
               const Icon(Icons.qr_code_scanner, size: 60, color: Colors.blue),
               const SizedBox(height: 16),
-              const Text(
-                'Attendance Actions',
+              Text(
+                context.tr('Attendance Actions'),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
@@ -404,7 +407,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                           },
                           icon: const Icon(Icons.qr_code_scanner_rounded,
                               size: 18),
-                          label: const Text('Scan QR'),
+                          label: Text(context.tr('Scan QR')),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
@@ -415,7 +418,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                         child: OutlinedButton.icon(
                           onPressed: _handleCheckOut,
                           icon: const Icon(Icons.logout_rounded, size: 18),
-                          label: const Text('Check Out'),
+                          label: Text(context.tr('Check Out')),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
@@ -430,7 +433,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                       child: ElevatedButton.icon(
                         onPressed: _handleSelfCheckIn,
                         icon: const Icon(Icons.fingerprint_rounded, size: 20),
-                        label: const Text('Self Clock In (GPS Only)'),
+                        label: Text(context.tr('Self Clock In (GPS Only)')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal,
                           foregroundColor: Colors.white,
@@ -449,13 +452,13 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
           ),
         ),
         const Divider(),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Row(
             children: [
               Icon(Icons.history, size: 20),
               SizedBox(width: 8),
-              Text('My Recent Shifts',
+              Text(context.tr('My Recent Shifts'),
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
@@ -466,11 +469,11 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
               onRefresh: () => ref.refresh(
                   employeeAttendanceHistoryProvider(authState.user!.id).future),
               child: history.isEmpty
-                  ? const SingleChildScrollView(
+                  ? SingleChildScrollView(
                       physics: AlwaysScrollableScrollPhysics(),
                       child: SizedBox(
                         height: 300,
-                        child: Center(child: Text('No shifts recorded yet')),
+                        child: Center(child: Text(context.tr('No shifts recorded yet'))),
                       ),
                     )
                   : ListView.builder(
@@ -507,16 +510,16 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'In: ${DateFormat('hh:mm a').format(checkIn)}' +
+                                  '${context.tr('In:')} ${DateFormat('hh:mm a').format(checkIn)}' +
                                       (checkOut != null
-                                          ? ' - Out: ${DateFormat('hh:mm a').format(checkOut)}'
-                                          : ' - Active'),
+                                          ? ' - ${context.tr('Out:')} ${DateFormat('hh:mm a').format(checkOut)}'
+                                          : ' - ${context.tr('Active')}'),
                                 ),
                                 if (record['staffId']?['shiftName'] !=
                                     null) ...[
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Shift: ${record['staffId']['shiftName']} (${record['staffId']['shiftStartTime']} - ${record['staffId']['shiftEndTime']})',
+                                    '${context.tr('Shift:')} ${record['staffId']['shiftName']} (${record['staffId']['shiftStartTime']} - ${record['staffId']['shiftEndTime']})',
                                     style: const TextStyle(
                                         fontSize: 11, color: Colors.grey),
                                   ),
@@ -572,7 +575,7 @@ class _StaffAttendanceViewState extends ConsumerState<StaffAttendanceView> {
                     ),
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, _) => Center(child: Text('${context.tr('Error')}: $e')),
           ),
         ),
       ],
@@ -892,7 +895,7 @@ class OwnerAttendanceView extends ConsumerWidget {
                                       icon: const Icon(
                                           Icons.my_location_rounded,
                                           size: 16),
-                                      label: const Text('Pin Current GPS'),
+                                      label: Text(context.tr('Pin Current GPS')),
                                       style: ElevatedButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
                                             vertical: 14),
@@ -912,7 +915,7 @@ class OwnerAttendanceView extends ConsumerWidget {
                                           _showLinkInputDialog(context, ref),
                                       icon: const Icon(Icons.map_rounded,
                                           size: 16),
-                                      label: const Text('Paste Maps Link'),
+                                      label: Text(context.tr('Paste Maps Link')),
                                       style: OutlinedButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
                                             vertical: 14),
@@ -1016,7 +1019,7 @@ class OwnerAttendanceView extends ConsumerWidget {
                                   ],
                                 ),
                                 child: Tooltip(
-                                  message: 'Tap to enlarge',
+                                  message: context.tr('Tap to enlarge'),
                                   child: Stack(
                                     alignment: Alignment.center,
                                     children: [
@@ -1056,7 +1059,7 @@ class OwnerAttendanceView extends ConsumerWidget {
                 ),
               ),
               // 2. Divider & Monitor Header Section
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Column(
                   children: [
                     Divider(),
@@ -1067,7 +1070,7 @@ class OwnerAttendanceView extends ConsumerWidget {
                         children: [
                           Icon(Icons.people_outline, size: 20),
                           SizedBox(width: 8),
-                          Text('Staff Attendance Monitor',
+                          Text(context.tr('Staff Attendance Monitor'),
                               style: TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
@@ -1079,11 +1082,11 @@ class OwnerAttendanceView extends ConsumerWidget {
               allRecordsAsync.when(
                 data: (records) {
                   if (records.isEmpty) {
-                    return const SliverToBoxAdapter(
+                    return SliverToBoxAdapter(
                       child: SizedBox(
                         height: 200,
                         child: Center(
-                            child: Text('No attendance records found today')),
+                            child: Text(context.tr('No attendance records found today'))),
                       ),
                     );
                   }
@@ -1191,7 +1194,7 @@ class OwnerAttendanceView extends ConsumerWidget {
                   ),
                 ),
                 error: (e, _) => SliverToBoxAdapter(
-                  child: Center(child: Text('Error: $e')),
+                  child: Center(child: Text('${context.tr('Error')}: $e')),
                 ),
               ),
             ],
@@ -1209,7 +1212,7 @@ class OwnerAttendanceView extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Paste Google Maps Link'),
+        title: Text(context.tr('Paste Google Maps Link')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1220,8 +1223,8 @@ class OwnerAttendanceView extends ConsumerWidget {
             const SizedBox(height: 16),
             TextField(
               controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'https://maps.app.goo.gl/...',
+              decoration: InputDecoration(
+                hintText: context.tr('https://maps.app.goo.gl/...'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.link),
               ),
@@ -1232,7 +1235,7 @@ class OwnerAttendanceView extends ConsumerWidget {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+              child: Text(context.tr('Cancel'))),
           ElevatedButton(
             onPressed: () async {
               String input = controller.text.trim();
@@ -1336,8 +1339,8 @@ class OwnerAttendanceView extends ConsumerWidget {
                     Navigator.pop(context); // Close input dialog
                     ModernAlert.show(
                       context,
-                      title: 'Location Updated!',
-                      message: 'Successfully updated shop to: $lat, $lng',
+                      title: context.tr('Location Updated!'),
+                      message: '${context.tr('Successfully updated shop to:')} $lat, $lng',
                       icon: Icons.check_circle_outline,
                       iconColor: Colors.green,
                     );
@@ -1359,7 +1362,7 @@ class OwnerAttendanceView extends ConsumerWidget {
                   Navigator.pop(context); // Close loading
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error: $e',
+                      content: Text('${context.tr('Error')}: $e',
                           style: const TextStyle(color: Colors.white)),
                       backgroundColor: Colors.red,
                     ),
@@ -1367,7 +1370,7 @@ class OwnerAttendanceView extends ConsumerWidget {
                 }
               }
             },
-            child: const Text('Confirm'),
+            child: Text(context.tr('Confirm')),
           ),
         ],
       ),
@@ -1389,7 +1392,7 @@ class OwnerAttendanceView extends ConsumerWidget {
       if (context.mounted) {
         ModernAlert.show(
           context,
-          title: 'Shop Location Pinned!',
+          title: context.tr('Shop Location Pinned!'),
           message:
               'Success! Your shop is now officially pinned at this GPS location. Your staff can now clock in when they are within 50 meters of this spot.',
           icon: Icons.check_circle_outline,
@@ -1594,8 +1597,8 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Success!',
-          message: 'You have clocked in successfully.',
+          title: context.tr('Success!'),
+          message: context.tr('You have clocked in successfully.'),
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
         );
@@ -1605,7 +1608,7 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Error',
+          title: context.tr('Error'),
           message: displayMessage,
           icon: Icons.error_outline,
           iconColor: Colors.red,
@@ -1643,8 +1646,8 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Success!',
-          message: 'You have self-clocked in successfully.',
+          title: context.tr('Success!'),
+          message: context.tr('You have self-clocked in successfully.'),
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
         );
@@ -1654,7 +1657,7 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Error',
+          title: context.tr('Error'),
           message: displayMessage,
           icon: Icons.error_outline,
           iconColor: Colors.red,
@@ -1691,8 +1694,8 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Success!',
-          message: 'You have clocked out successfully.',
+          title: context.tr('Success!'),
+          message: context.tr('You have clocked out successfully.'),
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
         );
@@ -1702,7 +1705,7 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Error',
+          title: context.tr('Error'),
           message: displayMessage,
           icon: Icons.error_outline,
           iconColor: Colors.red,
@@ -1911,7 +1914,7 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
                       );
                     },
                     icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
-                    label: const Text('Scan QR'),
+                    label: Text(context.tr('Scan QR')),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -1925,7 +1928,7 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
                   child: OutlinedButton.icon(
                     onPressed: _handleCheckOut,
                     icon: const Icon(Icons.logout_rounded, size: 18),
-                    label: const Text('Check Out'),
+                    label: Text(context.tr('Check Out')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -1943,7 +1946,7 @@ class _ManagerClockInOutCardState extends ConsumerState<ManagerClockInOutCard> {
               child: ElevatedButton.icon(
                 onPressed: _handleSelfCheckIn,
                 icon: const Icon(Icons.fingerprint_rounded, size: 20),
-                label: const Text('Self Clock In (GPS Only)'),
+                label: Text(context.tr('Self Clock In (GPS Only)')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,
                   foregroundColor: Colors.white,

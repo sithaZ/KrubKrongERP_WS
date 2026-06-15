@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/core.dart';
 
 /// POS Screen - Product listing and cart
 class PosScreen extends StatelessWidget {
@@ -8,7 +9,7 @@ class PosScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Point of Sale'),
+        title: Text(context.tr('Point of Sale')),
         actions: [
           IconButton(
             onPressed: () {
@@ -20,8 +21,8 @@ class PosScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: const Center(
-        child: Text('POS Module - Products Grid Here'),
+      body: Center(
+        child: Text(context.tr('POS Module - Products Grid Here')),
       ),
     );
   }

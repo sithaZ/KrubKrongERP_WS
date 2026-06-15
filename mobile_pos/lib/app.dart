@@ -9,12 +9,16 @@ class ErpApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final appLocale = ref.watch(appLocaleProvider);
 
     return MaterialApp.router(
-      title: 'ERP Mobile',
+      onGenerateTitle: (context) => context.l10n.appTitle,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      locale: appLocale.locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      theme: AppTheme.themeForLocale(appLocale.locale, Brightness.light),
+      darkTheme: AppTheme.themeForLocale(appLocale.locale, Brightness.dark),
       themeMode: ThemeMode.system,
       routerConfig: router,
     );

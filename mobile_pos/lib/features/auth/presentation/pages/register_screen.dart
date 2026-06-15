@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/core.dart';
 import '../../../../core/utils/validators.dart';
-import '../../../../core/widgets/common_widgets.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_text_field.dart';
 
@@ -41,7 +41,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (!_agreeToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Please agree to the terms and conditions'),
+            content: Text(context.tr('Please agree to the terms and conditions')),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -89,12 +89,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_ios),
         ),
-        title: const Text('Create Account'),
+        title: Text(context.tr('Create Account')),
       ),
       body: SafeArea(
         child: LoadingOverlay(
           isLoading: authState.isLoading,
-          message: 'Creating account...',
+          message: context.tr('Creating account...'),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Form(
@@ -104,7 +104,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 children: [
                   // Subtitle
                   Text(
-                    'Fill in your details to get started',
+                    context.tr('Fill in your details to get started'),
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -118,7 +118,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     hint: 'Enter your full name',
                     prefixIcon: Icons.person_outline,
                     textInputAction: TextInputAction.next,
-                    validator: Validators.name,
+                    validator: (value) {
+                      final error = Validators.name(value);
+                      return error == null ? null : context.tr(error);
+                    },
                   ),
                   const SizedBox(height: 20),
 
@@ -130,7 +133,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     prefixIcon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    validator: Validators.email,
+                    validator: (value) {
+                      final error = Validators.email(value);
+                      return error == null ? null : context.tr(error);
+                    },
                   ),
                   const SizedBox(height: 20),
 
@@ -144,7 +150,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) return null;
-                      return Validators.phone(value);
+                      final error = Validators.phone(value);
+                      return error == null ? null : context.tr(error);
                     },
                   ),
                   const SizedBox(height: 20),
@@ -157,7 +164,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     prefixIcon: Icons.lock_outline,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.next,
-                    validator: Validators.password,
+                    validator: (value) {
+                      final error = Validators.password(value);
+                      return error == null ? null : context.tr(error);
+                    },
                     suffixIcon: IconButton(
                       onPressed: () {
                         setState(() {
@@ -176,7 +186,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   // Password hint
                   Text(
-                    'Must be at least 8 characters with uppercase, lowercase, and number',
+                    context.tr('Must be at least 8 characters with uppercase, lowercase, and number'),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -191,10 +201,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     prefixIcon: Icons.lock_outline,
                     obscureText: _obscureConfirmPassword,
                     textInputAction: TextInputAction.done,
-                    validator: (value) => Validators.confirmPassword(
-                      value,
-                      _passwordController.text,
-                    ),
+                    validator: (value) {
+                      final error = Validators.confirmPassword(
+                        value,
+                        _passwordController.text,
+                      );
+                      return error == null ? null : context.tr(error);
+                    },
                     onFieldSubmitted: (_) => _handleRegister(),
                     suffixIcon: IconButton(
                       onPressed: () {
@@ -240,15 +253,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             ),
                             children: [
                               TextSpan(
-                                text: 'Terms of Service',
+                                text: context.tr('Terms of Service'),
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const TextSpan(text: ' and '),
+                              TextSpan(text: context.tr(' and ')),
                               TextSpan(
-                                text: 'Privacy Policy',
+                                text: context.tr('Privacy Policy'),
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.primary,
                                   fontWeight: FontWeight.w600,
@@ -269,7 +282,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: Text(
-                      'Create Account',
+                      context.tr('Create Account'),
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -282,7 +295,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Already have an account?',
+                        context.tr('Already have an account?'),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -290,7 +303,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       TextButton(
                         onPressed: () => context.pop(),
                         child: Text(
-                          'Sign In',
+                          context.tr('Sign In'),
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: colorScheme.primary,
                             fontWeight: FontWeight.w600,

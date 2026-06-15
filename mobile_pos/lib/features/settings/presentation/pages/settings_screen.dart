@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/errors/failures.dart';
+import '../../../../core/core.dart';
 import '../../../attendance/data/services/attendance_service.dart';
 import '../../../attendance/presentation/providers/attendance_provider.dart';
 
@@ -75,8 +74,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Settings saved successfully!'),
+          SnackBar(
+            content: Text(context.l10n.settingsSavedSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -86,7 +85,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save: $message'),
+            content: Text(context.l10n.failedToSave(message)),
             backgroundColor: Colors.red,
           ),
         );
@@ -110,10 +109,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Shop Settings'),
+        title: Text(l10n.shopSettings),
         actions: [
           if (!_isLoading)
             TextButton.icon(
@@ -121,7 +121,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               icon: _isSaving
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.save_rounded),
-              label: const Text('Save'),
+              label: Text(l10n.save),
             ),
         ],
       ),
@@ -138,14 +138,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     _buildSectionHeader(
                       theme,
                       icon: Icons.store_rounded,
-                      title: 'Shop Details',
-                      subtitle: 'Basic shop information used for attendance tracking.',
+                      title: l10n.shopDetails,
+                      subtitle: l10n.shopDetailsSubtitle,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _shopNameController,
-                      decoration: _inputDecoration('Shop Name', Icons.storefront_rounded),
-                      validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+                      decoration: _inputDecoration(l10n.shopName, Icons.storefront_rounded),
+                      validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -153,18 +153,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _latController,
-                            decoration: _inputDecoration('Latitude', Icons.my_location_rounded),
+                            decoration: _inputDecoration(l10n.latitude, Icons.my_location_rounded),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+                            validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: TextFormField(
                             controller: _lngController,
-                            decoration: _inputDecoration('Longitude', Icons.my_location_rounded),
+                            decoration: _inputDecoration(l10n.longitude, Icons.my_location_rounded),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+                            validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
                           ),
                         ),
                       ],
@@ -172,15 +172,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _radiusController,
-                      decoration: _inputDecoration('Attendance Radius (meters)', Icons.radar_rounded),
+                      decoration: _inputDecoration(l10n.attendanceRadius, Icons.radar_rounded),
                       keyboardType: TextInputType.number,
-                      validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+                      validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _secretKeyController,
-                      decoration: _inputDecoration('QR Secret Key', Icons.vpn_key_rounded),
-                      validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+                      decoration: _inputDecoration(l10n.qrSecretKey, Icons.vpn_key_rounded),
+                      validator: (v) => (v?.isEmpty ?? true) ? l10n.requiredField : null,
                     ),
 
                     const SizedBox(height: 32),
@@ -189,8 +189,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     _buildSectionHeader(
                       theme,
                       icon: Icons.fingerprint_rounded,
-                      title: 'Self-Attendance Settings',
-                      subtitle: 'Allow employees to clock in without scanning a QR code. GPS location is still verified.',
+                      title: l10n.selfAttendanceSettings,
+                      subtitle: l10n.selfAttendanceSubtitle,
                     ),
                     const SizedBox(height: 16),
                     _buildToggleCard(
@@ -198,8 +198,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       isDark: isDark,
                       icon: Icons.admin_panel_settings_rounded,
                       iconColor: Colors.deepPurple,
-                      title: 'Manager Self-Attendance',
-                      subtitle: 'Managers can clock in/out with just GPS verification (no QR code from owner needed).',
+                      title: l10n.managerSelfAttendance,
+                      subtitle: l10n.managerSelfAttendanceSubtitle,
                       value: _allowManagerSelfAttendance,
                       onChanged: (v) => setState(() => _allowManagerSelfAttendance = v),
                     ),
@@ -209,8 +209,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       isDark: isDark,
                       icon: Icons.person_rounded,
                       iconColor: Colors.blue,
-                      title: 'Staff Self-Attendance',
-                      subtitle: 'Staff can clock in/out with GPS when manager is absent or on day off.',
+                      title: l10n.staffSelfAttendance,
+                      subtitle: l10n.staffSelfAttendanceSubtitle,
                       value: _allowStaffSelfAttendance,
                       onChanged: (v) => setState(() => _allowStaffSelfAttendance = v),
                     ),
@@ -229,7 +229,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Self-attendance still requires the employee to be within the shop\'s GPS radius. Only the QR code scanning step is bypassed.',
+                              l10n.selfAttendanceInfo,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: Colors.amber.shade800,
                                 fontWeight: FontWeight.w500,

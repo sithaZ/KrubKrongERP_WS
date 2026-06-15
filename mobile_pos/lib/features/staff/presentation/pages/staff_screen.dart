@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/core.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../app/router/route_paths.dart';
@@ -31,13 +32,13 @@ class StaffScreen extends ConsumerWidget {
       data: (employees) {
         if (employees.isEmpty) {
           return EmptyStateWidget(
-            message: 'No staff yet',
-            subMessage: 'Add your first team member to get started.',
+            message: context.tr('No staff yet'),
+            subMessage: context.tr('Add your first team member to get started.'),
             icon: Icons.people_outline_rounded,
             action: ElevatedButton.icon(
               onPressed: () => context.push(AppRoutePaths.addStaff),
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add Staff'),
+              label: Text(context.tr('Add Staff')),
             ),
           );
         }
@@ -68,12 +69,12 @@ class StaffScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
       appBar: AppBar(
-        title: const Text('Staff'),
+        title: Text(context.tr('Staff')),
         actions: [
           IconButton(
             onPressed: () => context.push(AppRoutePaths.addStaff),
             icon: const Icon(Icons.person_add_outlined),
-            tooltip: 'Add Staff',
+            tooltip: context.tr('Add Staff'),
           ),
         ],
       ),
@@ -139,7 +140,7 @@ class _EmployeeCard extends StatelessWidget {
                       ),
                     ),
                     StatusBadge(
-                      label: isActive ? 'Active' : 'Inactive',
+                      label: isActive ? context.tr('Active') : context.tr('Inactive'),
                       color: isActive ? AppTheme.success : AppTheme.error,
                     ),
                   ],
@@ -233,24 +234,24 @@ class _EmployeeCard extends StatelessWidget {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'edit',
                     child: Row(
                       children: [
                         Icon(Icons.edit_outlined, size: 18),
                         SizedBox(width: 8),
-                        Text('Edit Staff'),
+                        Text(context.tr('Edit Staff')),
                       ],
                     ),
                   ),
                   if (isOwnerOrAdmin)
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'edit_attendance',
                       child: Row(
                         children: [
                           Icon(Icons.edit_calendar_outlined, size: 18),
                           SizedBox(width: 8),
-                          Text('Edit Attendance'),
+                          Text(context.tr('Edit Attendance')),
                         ],
                       ),
                     ),
@@ -260,7 +261,9 @@ class _EmployeeCard extends StatelessWidget {
                       children: [
                         Icon(isActive ? Icons.lock_outline : Icons.lock_open_outlined, size: 18),
                         const SizedBox(width: 8),
-                        Text(isActive ? 'Deactivate' : 'Activate'),
+                        Text(
+                          isActive ? context.tr('Deactivate') : context.tr('Activate'),
+                        ),
                       ],
                     ),
                   ),
@@ -277,12 +280,12 @@ class _EmployeeCard extends StatelessWidget {
     final isActive = employee.isActive as bool;
     ModernAlert.show(
       context,
-      title: isActive ? 'Deactivate Staff' : 'Activate Staff',
+      title: isActive ? context.tr('Deactivate Staff') : context.tr('Activate Staff'),
       message: isActive 
-          ? 'Are you sure you want to deactivate ${employee.fullName}? They will no longer be able to log in.'
-          : 'Are you sure you want to activate ${employee.fullName}? They will be allowed to log in.',
-      confirmLabel: isActive ? 'Deactivate' : 'Activate',
-      cancelLabel: 'Cancel',
+          ? '${context.tr('Are you sure you want to deactivate')} ${employee.fullName}? ${context.tr('They will no longer be able to log in.')}'
+          : '${context.tr('Are you sure you want to activate')} ${employee.fullName}? ${context.tr('They will be allowed to log in.')}',
+      confirmLabel: isActive ? context.tr('Deactivate') : context.tr('Activate'),
+      cancelLabel: context.tr('Cancel'),
       icon: Icons.warning_amber_rounded,
       iconColor: isActive ? AppTheme.error : AppTheme.success,
       onConfirm: () async {
@@ -457,7 +460,7 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to customize shift timing: $e'),
+              content: Text('${context.tr('Failed to customize shift timing:')} $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -486,8 +489,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
           ref.refresh(employeesProvider);
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Staff record updated successfully!'),
+            SnackBar(
+              content: Text(context.tr('Staff record updated successfully!')),
               backgroundColor: Colors.green,
             ),
           );
@@ -562,14 +565,14 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
             }
 
             return AlertDialog(
-              title: const Text('Add Shift Template'),
+              title: Text(context.tr('Add Shift Template')),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Shift Name (e.g. Morning, Afternoon)',
+                    decoration: InputDecoration(
+                      labelText: context.tr('Shift Name (e.g. Morning, Afternoon)'),
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -580,8 +583,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                         child: InkWell(
                           onTap: () => selectDTime(true),
                           child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'Start Time',
+                            decoration: InputDecoration(
+                              labelText: context.tr('Start Time'),
                               prefixIcon: Icon(Icons.login_rounded),
                               border: OutlineInputBorder(),
                             ),
@@ -594,8 +597,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                         child: InkWell(
                           onTap: () => selectDTime(false),
                           child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'End Time',
+                            decoration: InputDecoration(
+                              labelText: context.tr('End Time'),
                               prefixIcon: Icon(Icons.logout_rounded),
                               border: OutlineInputBorder(),
                             ),
@@ -610,7 +613,7 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(context.tr('Cancel')),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -640,7 +643,7 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                       debugPrint('Error creating shift template: $e');
                     }
                   },
-                  child: const Text('Add Template'),
+                  child: Text(context.tr('Add Template')),
                 ),
               ],
             );
@@ -666,7 +669,7 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
         children: [
           const Icon(Icons.edit_note, color: Colors.blue),
           const SizedBox(width: 8),
-          Expanded(child: Text('Edit ${widget.employee.fullName}')),
+          Expanded(child: Text('${context.tr('Edit')} ${widget.employee.fullName}')),
         ],
       ),
       content: _loadingShifts 
@@ -684,8 +687,12 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                     // Active Toggle Switch
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Login Authorization'),
-                      subtitle: Text(_isActive ? 'Active (Allowed to log in)' : 'Inactive (Access Blocked)'),
+                      title: Text(context.tr('Login Authorization')),
+                      subtitle: Text(
+                        _isActive
+                            ? context.tr('Active (Allowed to log in)')
+                            : context.tr('Inactive (Access Blocked)'),
+                      ),
                       value: _isActive,
                       activeColor: Colors.green,
                       onChanged: (val) {
@@ -696,8 +703,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Full Name'),
                         prefixIcon: Icon(Icons.person_outline),
                         border: OutlineInputBorder(),
                       ),
@@ -706,8 +713,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Phone Number'),
                         prefixIcon: Icon(Icons.phone_outlined),
                         border: OutlineInputBorder(),
                       ),
@@ -717,8 +724,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                       controller: _hireDateController,
                       readOnly: true,
                       onTap: _selectHireDate,
-                      decoration: const InputDecoration(
-                        labelText: 'Hire Date',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Hire Date'),
                         prefixIcon: Icon(Icons.calendar_today),
                         border: OutlineInputBorder(),
                       ),
@@ -731,8 +738,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: _selectedShiftId,
-                            decoration: const InputDecoration(
-                              labelText: 'Assigned Shift Duration',
+                            decoration: InputDecoration(
+                              labelText: context.tr('Assigned Shift Duration'),
                               prefixIcon: Icon(Icons.schedule),
                               border: OutlineInputBorder(),
                             ),
@@ -761,7 +768,7 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.add_circle, color: Colors.blue),
-                            tooltip: 'Add Custom Shift Template',
+                            tooltip: context.tr('Add Custom Shift Template'),
                             onPressed: _addNewShift,
                           ),
                         ],
@@ -775,8 +782,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                             child: InkWell(
                               onTap: () => _selectTime(true),
                               child: InputDecorator(
-                                decoration: const InputDecoration(
-                                  labelText: 'Shift Start Time',
+                                decoration: InputDecoration(
+                                  labelText: context.tr('Shift Start Time'),
                                   prefixIcon: Icon(Icons.login_rounded),
                                   border: OutlineInputBorder(),
                                 ),
@@ -792,8 +799,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                             child: InkWell(
                               onTap: () => _selectTime(false),
                               child: InputDecorator(
-                                decoration: const InputDecoration(
-                                  labelText: 'Shift End Time',
+                                decoration: InputDecoration(
+                                  labelText: context.tr('Shift End Time'),
                                   prefixIcon: Icon(Icons.logout_rounded),
                                   border: OutlineInputBorder(),
                                 ),
@@ -812,8 +819,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                     // Position Dropdown
                     DropdownButtonFormField<String>(
                       value: _selectedPosition,
-                      decoration: const InputDecoration(
-                        labelText: 'Position',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Position'),
                         prefixIcon: Icon(Icons.work_outline),
                         border: OutlineInputBorder(),
                       ),
@@ -832,8 +839,8 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                     // Department Dropdown
                     DropdownButtonFormField<String>(
                       value: _selectedDepartment,
-                      decoration: const InputDecoration(
-                        labelText: 'Department',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Department'),
                         prefixIcon: Icon(Icons.business_outlined),
                         border: OutlineInputBorder(),
                       ),
@@ -852,22 +859,22 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                     // Salary Type Dropdown
                     DropdownButtonFormField<String>(
                       value: _salaryType,
-                      decoration: const InputDecoration(
-                        labelText: 'Salary Type',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Salary Type'),
                         prefixIcon: Icon(Icons.payments_outlined),
                         border: OutlineInputBorder(),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                        DropdownMenuItem(value: 'daily', child: Text('Daily')),
+                      items: [
+                        DropdownMenuItem(value: 'monthly', child: Text(context.tr('Monthly'))),
+                        DropdownMenuItem(value: 'daily', child: Text(context.tr('Daily'))),
                       ],
                       onChanged: (v) => setState(() => _salaryType = v!),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _salaryController,
-                      decoration: const InputDecoration(
-                        labelText: 'Base Salary',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Base Salary'),
                         prefixIcon: Icon(Icons.attach_money),
                         border: OutlineInputBorder(),
                       ),
@@ -881,7 +888,7 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
         ElevatedButton(
           onPressed: _saving ? null : _submit,
@@ -891,7 +898,7 @@ class _EditStaffDialogState extends ConsumerState<EditStaffDialog> {
                   width: 16, 
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
                 )
-              : const Text('Save Changes'),
+              : Text(context.tr('Save Changes')),
         ),
       ],
     );
@@ -984,7 +991,7 @@ class _ManualAttendanceEditDialogState extends ConsumerState<ManualAttendanceEdi
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading record: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('${context.tr('Error loading record:')} $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1052,8 +1059,8 @@ class _ManualAttendanceEditDialogState extends ConsumerState<ManualAttendanceEdi
         Navigator.pop(context);
         ModernAlert.show(
           context,
-          title: 'Success!',
-          message: 'Attendance saved successfully.',
+          title: context.tr('Success!'),
+          message: context.tr('Attendance saved successfully.'),
           icon: Icons.check_circle_outline,
           iconColor: Colors.green,
         );
@@ -1062,7 +1069,7 @@ class _ManualAttendanceEditDialogState extends ConsumerState<ManualAttendanceEdi
       final display = e is Failure ? e.message : e.toString();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $display'), backgroundColor: Colors.red),
+          SnackBar(content: Text('${context.tr('Error')}: $display'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1081,7 +1088,7 @@ class _ManualAttendanceEditDialogState extends ConsumerState<ManualAttendanceEdi
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Edit Attendance',
+              context.tr('Edit Attendance'),
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
@@ -1136,8 +1143,8 @@ class _ManualAttendanceEditDialogState extends ConsumerState<ManualAttendanceEdi
               else ...[
                 DropdownButtonFormField<String>(
                   value: _selectedStatus,
-                  decoration: const InputDecoration(
-                    labelText: 'Attendance Status',
+                  decoration: InputDecoration(
+                    labelText: context.tr('Attendance Status'),
                     border: OutlineInputBorder(),
                   ),
                   items: ['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'LEAVE', 'HOLIDAY']
@@ -1155,40 +1162,40 @@ class _ManualAttendanceEditDialogState extends ConsumerState<ManualAttendanceEdi
                 const SizedBox(height: 16),
                 TextField(
                   controller: _checkInController,
-                  decoration: const InputDecoration(
-                    labelText: 'Check-In Time (HH:mm)',
+                  decoration: InputDecoration(
+                    labelText: context.tr('Check-In Time (HH:mm)'),
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.login),
-                    hintText: 'e.g. 08:30',
+                    hintText: context.tr('e.g. 08:30'),
                   ),
                   keyboardType: TextInputType.datetime,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _checkOutController,
-                  decoration: const InputDecoration(
-                    labelText: 'Check-Out Time (HH:mm)',
+                  decoration: InputDecoration(
+                    labelText: context.tr('Check-Out Time (HH:mm)'),
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.logout),
-                    hintText: 'e.g. 17:30',
+                    hintText: context.tr('e.g. 17:30'),
                   ),
                   keyboardType: TextInputType.datetime,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _noteController,
-                  decoration: const InputDecoration(
-                    labelText: 'Reason / Note',
+                  decoration: InputDecoration(
+                    labelText: context.tr('Reason / Note'),
                     border: OutlineInputBorder(),
-                    hintText: 'Enter note or adjustment reason',
+                    hintText: context.tr('Enter note or adjustment reason'),
                   ),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _existingRecord != null 
-                      ? 'Note: An attendance record already exists for this date. Saving will overwrite the record.'
-                      : 'Note: No record exists for this date. Saving will create a new manual log.',
+                      ? context.tr('Note: An attendance record already exists for this date. Saving will overwrite the record.')
+                      : context.tr('Note: No record exists for this date. Saving will create a new manual log.'),
                   style: TextStyle(
                     fontSize: 11, 
                     color: _existingRecord != null ? Colors.orange.shade800 : Colors.blue.shade800,
@@ -1203,7 +1210,7 @@ class _ManualAttendanceEditDialogState extends ConsumerState<ManualAttendanceEdi
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
         ElevatedButton(
           onPressed: _fetchingRecord || _saving ? null : _save,
@@ -1213,7 +1220,7 @@ class _ManualAttendanceEditDialogState extends ConsumerState<ManualAttendanceEdi
                   width: 16,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('Save'),
+              : Text(context.tr('Save')),
         ),
       ],
     );

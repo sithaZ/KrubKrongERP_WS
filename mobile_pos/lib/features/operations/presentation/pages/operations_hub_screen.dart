@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/core.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../app/router/route_paths.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -15,23 +16,26 @@ class OperationsHubScreen extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
 
     // RBAC: Check permissions
-    final isOwner = user?.rawRole.toUpperCase() == 'OWNER' || user?.rawRole.toUpperCase() == 'ADMIN';
-    final isManager = user?.rawRole.toUpperCase() == 'MANAGER';
+    final isOwner =
+        user?.rawRole.toUpperCase() == 'OWNER' ||
+        user?.rawRole.toUpperCase() == 'ADMIN';
 
     // Build items list based on role
     final List<_HubItem> items = [
       _HubItem(
         icon: Icons.inventory_2_outlined,
-        title: 'Inventory',
-        description: 'Track stock counts and receive low stock alerts.',
+        title: context.tr('Inventory'),
+        description: context.tr(
+          'Track stock counts and receive low stock alerts.',
+        ),
         route: AppRoutePaths.inventory,
         color: AppTheme.primary,
         bgColor: AppTheme.primaryContainer,
       ),
       _HubItem(
         icon: Icons.shopping_bag_outlined,
-        title: 'Products',
-        description: 'Manage items, pricing, and category catalog.',
+        title: context.tr('Products'),
+        description: context.tr('Manage items, pricing, and category catalog.'),
         route: AppRoutePaths.products,
         color: AppTheme.info,
         bgColor: AppTheme.infoSurface,
@@ -39,16 +43,18 @@ class OperationsHubScreen extends ConsumerWidget {
       if (isOwner) ...[
         _HubItem(
           icon: Icons.local_shipping_outlined,
-          title: 'Suppliers',
-          description: 'Directory of suppliers and vendor records.',
+          title: context.tr('Suppliers'),
+          description: context.tr('Directory of suppliers and vendor records.'),
           route: AppRoutePaths.suppliers,
           color: AppTheme.warning,
           bgColor: AppTheme.warningSurface,
         ),
         _HubItem(
           icon: Icons.shopping_cart_checkout_outlined,
-          title: 'Purchase Orders',
-          description: 'Raise, monitor, and receive restocking orders.',
+          title: context.tr('Purchase Orders'),
+          description: context.tr(
+            'Raise, monitor, and receive restocking orders.',
+          ),
           route: AppRoutePaths.purchaseOrders,
           color: Colors.purple,
           bgColor: Colors.purple.withOpacity(0.08),
@@ -56,16 +62,18 @@ class OperationsHubScreen extends ConsumerWidget {
       ],
       _HubItem(
         icon: Icons.analytics_outlined,
-        title: 'Reports',
-        description: 'View sales trends, revenue summary, and analytics.',
+        title: context.tr('Reports'),
+        description: context.tr(
+          'View sales trends, revenue summary, and analytics.',
+        ),
         route: AppRoutePaths.reports,
         color: AppTheme.success,
         bgColor: AppTheme.successSurface,
       ),
       _HubItem(
         icon: Icons.receipt_long_outlined,
-        title: 'Orders',
-        description: 'View sales orders and transaction history.',
+        title: context.tr('Orders'),
+        description: context.tr('View sales orders and transaction history.'),
         route: AppRoutePaths.orders,
         color: Colors.indigo,
         bgColor: Colors.indigo.withOpacity(0.08),
@@ -73,8 +81,10 @@ class OperationsHubScreen extends ConsumerWidget {
       if (isOwner)
         _HubItem(
           icon: Icons.account_balance_wallet_outlined,
-          title: 'Expenses',
-          description: 'Log and track operating costs and cash outflows.',
+          title: context.tr('Expenses'),
+          description: context.tr(
+            'Log and track operating costs and cash outflows.',
+          ),
           route: AppRoutePaths.expenses,
           color: AppTheme.error,
           bgColor: AppTheme.errorSurface,
@@ -84,7 +94,7 @@ class OperationsHubScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
       appBar: AppBar(
-        title: const Text('Operations'),
+        title: Text(context.tr('Operations')),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -124,7 +134,7 @@ class OperationsHubScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Operations Hub',
+                        context.tr('Operations Hub'),
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: Colors.white.withOpacity(0.9),
                           fontWeight: FontWeight.w700,
@@ -134,7 +144,7 @@ class OperationsHubScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'ERP Business Tools',
+                    context.tr('ERP Business Tools'),
                     style: theme.textTheme.headlineMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
@@ -143,7 +153,9 @@ class OperationsHubScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Manage items, track stock, review vendor directories, and analyze financial reports.',
+                    context.tr(
+                      'Manage items, track stock, review vendor directories, and analyze financial reports.',
+                    ),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.white.withOpacity(0.85),
                       height: 1.45,

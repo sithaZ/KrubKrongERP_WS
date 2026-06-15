@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/core.dart';
 
 /// Order management screen
 class OrderScreen extends ConsumerWidget {
@@ -9,10 +10,10 @@ class OrderScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Orders'),
+        title: Text(context.tr('Orders')),
       ),
-      body: const Center(
-        child: Text('Order Module - Order List Here'),
+      body: Center(
+        child: Text(context.tr('Order Module - Order List Here')),
       ),
     );
   }

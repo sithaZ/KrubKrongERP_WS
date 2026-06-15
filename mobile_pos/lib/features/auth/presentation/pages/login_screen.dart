@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/core.dart';
 import '../../../../core/utils/validators.dart';
-import '../../../../core/widgets/common_widgets.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_text_field.dart';
 
@@ -41,6 +41,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final appLocale = ref.watch(appLocaleProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -55,7 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: LoadingOverlay(
           isLoading: authState.isLoading,
-          message: 'Signing in...',
+          message: context.tr('Signing in...'),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Form(
@@ -63,13 +64,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final nextLocale = appLocale == AppLocale.khmer
+                            ? AppLocale.english
+                            : AppLocale.khmer;
+                        await ref.read(appLocaleProvider.notifier).setLocale(nextLocale);
+                      },
+                      icon: const Icon(Icons.language_rounded, size: 18),
+                      label: Text(appLocale.nativeLabel),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   const SizedBox(height: 32),
                   Center(
                     child: AppLogo(size: 120, color: colorScheme.primary),
                   ),
                   const SizedBox(height: 32),
                   Text(
-                    'Welcome Back!',
+                    context.tr('Welcome Back!'),
                     style: theme.textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurface,
@@ -78,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in with your manager or employee account',
+                    context.tr('Sign in with your manager or employee account'),
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -92,7 +107,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     prefixIcon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    validator: Validators.email,
+                    validator: (value) {
+                      final error = Validators.email(value);
+                      return error == null ? null : context.tr(error);
+                    },
                   ),
                   const SizedBox(height: 20),
                   AuthTextField(
@@ -102,7 +120,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     prefixIcon: Icons.lock_outline,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
-                    validator: Validators.simplePassword,
+                    validator: (value) {
+                      final error = Validators.simplePassword(value);
+                      return error == null ? null : context.tr(error);
+                    },
                     onFieldSubmitted: (_) => _handleLogin(),
                     suffixIcon: IconButton(
                       onPressed: () {
@@ -127,7 +148,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      'This app currently supports MANAGER and EMPLOYEE accounts only.',
+                      context.tr('This app currently supports MANAGER and EMPLOYEE accounts only.'),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -141,7 +162,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: Text(
-                      'Sign In',
+                      context.tr('Sign In'),
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
