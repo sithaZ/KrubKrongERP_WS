@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/core.dart';
-import '../../features/dashboard/presentation/pages/dashboard_screen.dart';
+import '../../features/dashboard/presentation/pages/dashboard_screen_synced.dart';
 import '../../features/pos/presentation/pages/pos_screen.dart';
 import '../../features/more/presentation/pages/more_hub_screen.dart';
 

@@ -13,8 +13,9 @@ class HttpClientConfig {
 
   /// Initialize the Dio HTTP client
   void initialize() {
-    final baseUrl =
-        dotenv.env[AppConstants.restApiEndpoint] ?? 'http://10.0.2.2:3000/api';
+    final baseUrl = _sanitizeBaseUrl(
+      dotenv.env[AppConstants.restApiEndpoint],
+    );
 
     if (kDebugMode) {
       print('Resolved baseUrl: $baseUrl');
@@ -51,8 +52,9 @@ class HttpClientConfig {
     RequestInterceptorHandler handler,
   ) async {
     final token = await _secureStorage.read(AppConstants.authTokenKey);
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+    final sanitizedToken = token?.trim();
+    if (sanitizedToken != null && sanitizedToken.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $sanitizedToken';
     }
     return handler.next(options);
   }
@@ -69,6 +71,28 @@ class HttpClientConfig {
   }
 
   Dio get client => _dio;
+
+  String _sanitizeBaseUrl(String? rawBaseUrl) {
+    var candidate = (rawBaseUrl ?? 'http://10.0.2.2:3000/api').trim();
+
+    // Guard against accidental encoded/decoded leading spaces from copied env values.
+    while (candidate.startsWith('%20')) {
+      candidate = candidate.substring(3).trimLeft();
+    }
+
+    candidate = candidate.replaceFirst(RegExp(r'^\s+'), '');
+
+    if (!candidate.startsWith('http://') && !candidate.startsWith('https://')) {
+      candidate = 'http://$candidate';
+    }
+
+    final parsed = Uri.tryParse(candidate);
+    if (parsed == null || parsed.host.isEmpty) {
+      return 'http://10.0.2.2:3000/api';
+    }
+
+    return parsed.toString().replaceAll(RegExp(r'\/+$'), '');
+  }
 }
 
 /// Simple logging interceptor for debug mode

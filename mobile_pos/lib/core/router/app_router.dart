@@ -13,6 +13,7 @@ import '../../features/staff/presentation/pages/staff_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_detail_screen.dart';
 import '../../features/order/presentation/pages/order_screen.dart';
+import '../../features/inventory/presentation/pages/inventory_screen.dart';
 import '../../features/settings/presentation/pages/settings_screen.dart';
 import '../widgets/placeholder_screen.dart';
 
@@ -118,11 +119,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutePaths.products,
-        builder: (context, state) => const ErpPlaceholderScreen(
-          title: 'Product Catalog',
-          description: 'This feature will be available in a future release.',
-          icon: Icons.shopping_bag_outlined,
-        ),
+        builder: (context, state) => const ProductsScreen(),
       ),
       GoRoute(
         path: AppRoutePaths.suppliers,
@@ -186,11 +183,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutePaths.inventory,
-        builder: (context, state) => const ErpPlaceholderScreen(
-          title: 'Inventory Tracking',
-          description: 'This feature will be available in a future release.',
-          icon: Icons.inventory_2_outlined,
-        ),
+        builder: (context, state) => const InventoryScreen(),
       ),
       GoRoute(
         path: AppRoutePaths.orders,

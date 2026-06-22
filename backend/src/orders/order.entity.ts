@@ -25,6 +25,9 @@ export class OrderItem {
 
   @Prop({ required: true, min: 0 })
   total: number;
+
+  @Prop()
+  imageUrl?: string;
 }
 
 @Schema({ timestamps: true })
@@ -34,6 +37,9 @@ export class Order extends Document {
 
   @Prop({ required: true, min: 0 })
   subtotal: number;
+
+  @Prop({ required: true, min: 0, default: 0 })
+  discount: number;
 
   @Prop({ required: true, min: 0 })
   tax: number;
@@ -50,8 +56,17 @@ export class Order extends Document {
   @Prop({ required: false })
   customerName?: string;
 
+  @Prop({ type: Types.ObjectId, ref: 'Company', index: true })
+  companyId?: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   cashierId: Types.ObjectId;
+
+  @Prop({ required: true })
+  receiptNumber: string;
+
+  @Prop({ default: 'cash' })
+  paymentMethod: string;
 
   @Prop({ required: false })
   notes?: string;

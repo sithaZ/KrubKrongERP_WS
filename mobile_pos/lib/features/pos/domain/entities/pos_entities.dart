@@ -31,7 +31,7 @@ class Product extends Equatable {
   final DateTime? createdAt;
 
   bool get isInStock => stockQuantity > 0;
-  bool get isLowStock => stockQuantity > 0 && stockQuantity <= 10;
+  bool get isLowStock => stockQuantity <= 10;
 
   @override
   List<Object?> get props => [
@@ -118,6 +118,7 @@ class Order extends Equatable {
     required this.id,
     required this.items,
     required this.subtotal,
+    this.discount = 0,
     required this.tax,
     required this.total,
     this.status = OrderStatus.pending,
@@ -125,11 +126,14 @@ class Order extends Equatable {
     this.customerName,
     required this.cashierId,
     required this.createdAt,
+    this.receiptNumber,
+    this.paymentMethod,
     this.notes,
   });
   final String id;
   final List<OrderItem> items;
   final double subtotal;
+  final double discount;
   final double tax;
   final double total;
   final OrderStatus status;
@@ -137,6 +141,8 @@ class Order extends Equatable {
   final String? customerName;
   final String cashierId;
   final DateTime createdAt;
+  final String? receiptNumber;
+  final String? paymentMethod;
   final String? notes;
 
   @override

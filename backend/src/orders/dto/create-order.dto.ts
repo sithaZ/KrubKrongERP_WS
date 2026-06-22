@@ -12,20 +12,9 @@ export class OrderItemDto {
   @IsString()
   productId: string;
 
-  @IsString()
-  productName: string;
-
-  @IsNumber()
-  @Min(0)
-  unitPrice: number;
-
   @IsNumber()
   @Min(1)
   quantity: number;
-
-  @IsNumber()
-  @Min(0)
-  total: number;
 }
 
 export class CreateOrderDto {
@@ -37,6 +26,11 @@ export class CreateOrderDto {
   @IsNumber()
   @Min(0)
   subtotal: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discount?: number;
 
   @IsNumber()
   @Min(0)
@@ -57,4 +51,8 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
 }

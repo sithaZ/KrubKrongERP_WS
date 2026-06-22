@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -14,6 +14,12 @@ export class DashboardController {
   @Roles(Role.ADMIN)
   getStats() {
     return this.dashboardService.getStats();
+  }
+
+  @Get('shop-summary')
+  @Roles(Role.MANAGER, Role.OWNER, Role.ADMIN)
+  getShopSummary(@Request() req: any) {
+    return this.dashboardService.getShopSummary(req.user);
   }
 
   @Get('sales')
