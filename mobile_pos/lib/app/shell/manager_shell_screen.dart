@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/dashboard/presentation/pages/dashboard_screen.dart';
+import '../../core/core.dart';
+import '../../features/dashboard/presentation/pages/dashboard_screen_synced.dart';
 import '../../features/pos/presentation/pages/pos_screen.dart';
 import '../../features/operations/presentation/pages/operations_hub_screen.dart';
 import '../../features/more/presentation/pages/more_hub_screen.dart';
-import '../../core/theme/app_theme.dart';
 
 import '../../features/attendance/presentation/widgets/global_scanner_wrapper.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
@@ -21,6 +21,7 @@ class _ManagerShellScreenState extends ConsumerState<ManagerShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final pages = [
       const DashboardScreen(),
       const PosScreen(),
@@ -55,26 +56,26 @@ class _ManagerShellScreenState extends ConsumerState<ManagerShellScreen> {
               _selectedIndex = index;
             });
           },
-          destinations: const [
+          destinations: [
             NavigationDestination(
               icon: Icon(Icons.dashboard_outlined),
               selectedIcon: Icon(Icons.dashboard_rounded),
-              label: 'Dashboard',
+              label: l10n.dashboard,
             ),
             NavigationDestination(
               icon: Icon(Icons.storefront_outlined),
               selectedIcon: Icon(Icons.storefront_rounded),
-              label: 'POS',
+              label: l10n.pos,
             ),
             NavigationDestination(
               icon: Icon(Icons.business_center_outlined),
               selectedIcon: Icon(Icons.business_center_rounded),
-              label: 'Operations',
+              label: context.tr('Operations'),
             ),
             NavigationDestination(
               icon: Icon(Icons.more_horiz_rounded),
               selectedIcon: Icon(Icons.more_horiz_rounded),
-              label: 'More',
+              label: l10n.more,
             ),
           ],
         ),

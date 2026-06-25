@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/core.dart';
 
 /// App navigation shell with bottom navigation bar
 class AppNavigationShell extends ConsumerWidget {
@@ -17,6 +17,7 @@ class AppNavigationShell extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final isPrivileged = (user?.isOwner ?? false) || (user?.isAdmin ?? false);
+    final l10n = context.l10n;
 
     final List<int> branchMap = [];
     if (isPrivileged) {
@@ -47,42 +48,42 @@ class AppNavigationShell extends ConsumerWidget {
           },
           destinations: [
             if (isPrivileged)
-              const NavigationDestination(
+              NavigationDestination(
                 icon: Icon(Icons.grid_view_outlined),
                 selectedIcon: Icon(Icons.grid_view_rounded),
-                label: 'Dashboard',
+                label: l10n.dashboard,
               ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.storefront_outlined),
               selectedIcon: Icon(Icons.storefront_rounded),
-              label: 'POS',
+              label: l10n.pos,
             ),
             if (isPrivileged)
-              const NavigationDestination(
+              NavigationDestination(
                 icon: Icon(Icons.receipt_long_outlined),
                 selectedIcon: Icon(Icons.receipt_long_rounded),
-                label: 'Orders',
+                label: l10n.orders,
               ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.inventory_2_outlined),
               selectedIcon: Icon(Icons.inventory_2_rounded),
-              label: 'Products',
+              label: l10n.products,
             ),
             if (isPrivileged)
-              const NavigationDestination(
+              NavigationDestination(
                 icon: Icon(Icons.people_outline_rounded),
                 selectedIcon: Icon(Icons.people_rounded),
-                label: 'Staff',
+                label: l10n.staff,
               ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.qr_code_scanner_outlined),
               selectedIcon: Icon(Icons.qr_code_scanner_rounded),
-              label: 'Attendance',
+              label: l10n.attendance,
             ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.person_outline_rounded),
               selectedIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
+              label: l10n.profile,
             ),
           ],
         ),

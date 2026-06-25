@@ -15,11 +15,20 @@ final secureStorageProvider = Provider<SecureStorageService>((ref) {
   return SecureStorageServiceImpl(const FlutterSecureStorage());
 });
 
+final sharedPreferencesInstanceProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError(
+    'sharedPreferencesInstanceProvider must be overridden in main()',
+  );
+});
+
+final sharedPreferencesServiceProvider = Provider<SharedPreferencesService>((ref) {
+  return SharedPreferencesServiceImpl(ref.watch(sharedPreferencesInstanceProvider));
+});
+
 /// Shared preferences provider (needs async initialization)
 final sharedPreferencesProvider =
     FutureProvider<SharedPreferencesService>((ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  return SharedPreferencesServiceImpl(prefs);
+  return ref.watch(sharedPreferencesServiceProvider);
 });
 
 /// Network info provider

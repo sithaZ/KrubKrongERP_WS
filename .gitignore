@@ -1,2 +1,4 @@
-node_modules/ 
-web_admin/node_modules/ 
+node_modules/
+web_admin/node_modules/
+build/
+backend/tmp_*.js

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/core.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -14,16 +13,17 @@ class ProfileScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(l10n.profile),
         actions: [
           IconButton(
             onPressed: () => _showLogoutDialog(context, ref),
             icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Logout',
+            tooltip: l10n.signOut,
           ),
         ],
       ),
@@ -79,7 +79,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    user?.name ?? 'User Name',
+                    user?.name ?? l10n.userNameFallback,
                     style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 6),
@@ -99,7 +99,7 @@ class ProfileScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Account Information',
+                    context.tr('Account Information'),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                       letterSpacing: 0.6,
@@ -120,15 +120,15 @@ class ProfileScreen extends ConsumerWidget {
                       children: [
                         _InfoRow(
                           icon: Icons.email_outlined,
-                          label: 'Email',
-                          value: user?.email ?? 'N/A',
+                          label: context.tr('Email'),
+                          value: user?.email ?? context.tr('N/A'),
                           isDark: isDark,
                           showDivider: true,
                         ),
                         _InfoRow(
                           icon: Icons.phone_outlined,
-                          label: 'Phone',
-                          value: user?.phone ?? 'N/A',
+                          label: context.tr('Phone'),
+                          value: user?.phone ?? context.tr('N/A'),
                           isDark: isDark,
                           showDivider: false,
                         ),
@@ -144,7 +144,7 @@ class ProfileScreen extends ConsumerWidget {
                     child: OutlinedButton.icon(
                       onPressed: () => _showLogoutDialog(context, ref),
                       icon: const Icon(Icons.logout_rounded, size: 18),
-                      label: const Text('Sign Out'),
+                      label: Text(l10n.signOut),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         side: BorderSide(color: colorScheme.error.withOpacity(0.5)),
@@ -165,12 +165,12 @@ class ProfileScreen extends ConsumerWidget {
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     ModernAlert.show(
       context,
-      title: 'Sign Out',
-      message: 'Are you sure you want to sign out of your account?',
+      title: context.l10n.signOutTitle,
+      message: context.l10n.signOutMessage,
       icon: Icons.logout_rounded,
       iconColor: AppTheme.error,
-      confirmLabel: 'Sign Out',
-      cancelLabel: 'Cancel',
+      confirmLabel: context.l10n.signOut,
+      cancelLabel: context.l10n.cancel,
       onConfirm: () => ref.read(authProvider.notifier).logout(),
     );
   }

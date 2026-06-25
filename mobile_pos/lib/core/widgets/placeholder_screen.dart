@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../core.dart';
 
 class ErpPlaceholderScreen extends StatelessWidget {
   const ErpPlaceholderScreen({
@@ -17,11 +17,13 @@ class ErpPlaceholderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final localizedTitle = context.tr(title);
+    final localizedDescription = context.tr(description);
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
       appBar: AppBar(
-        title: Text(title),
+        title: Text(localizedTitle),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -67,7 +69,7 @@ class ErpPlaceholderScreen extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'COMING SOON',
+                  context.tr('COMING SOON'),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: AppTheme.primary,
                     fontWeight: FontWeight.w800,
@@ -79,7 +81,7 @@ class ErpPlaceholderScreen extends StatelessWidget {
 
               // Title
               Text(
-                title,
+                localizedTitle,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
@@ -90,7 +92,7 @@ class ErpPlaceholderScreen extends StatelessWidget {
 
               // Description
               Text(
-                description,
+                localizedDescription,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                   height: 1.6,
@@ -105,7 +107,7 @@ class ErpPlaceholderScreen extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => Navigator.maybePop(context),
                   icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                  label: const Text('Go Back'),
+                  label: Text(context.tr('Go Back')),
                 ),
               ),
             ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/core.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -117,11 +118,11 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Row(
+              title: Row(
                 children: [
                   Icon(Icons.edit_calendar, color: Colors.blue),
                   SizedBox(width: 8),
-                  Text('Manual Correction'),
+                  Text(context.tr('Manual Correction')),
                 ],
               ),
               content: SingleChildScrollView(
@@ -129,15 +130,17 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Correct timestamps or status below. Doing so will flag this log as "Manual" and record your user audit trail.',
+                    Text(
+                      context.tr(
+                        'Correct timestamps or status below. Doing so will flag this log as "Manual" and record your user audit trail.',
+                      ),
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: selectedStatus,
-                      decoration: const InputDecoration(
-                        labelText: 'Attendance Status',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Attendance Status'),
                         border: OutlineInputBorder(),
                       ),
                       items: ['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'LEAVE', 'HOLIDAY']
@@ -155,8 +158,8 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                     const SizedBox(height: 16),
                     TextField(
                       controller: checkInTimeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Check-In Time (HH:mm)',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Check-In Time (HH:mm)'),
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.login),
                       ),
@@ -165,8 +168,8 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                     const SizedBox(height: 16),
                     TextField(
                       controller: checkOutTimeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Check-Out Time (HH:mm)',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Check-Out Time (HH:mm)'),
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.logout),
                       ),
@@ -175,10 +178,10 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                     const SizedBox(height: 16),
                     TextField(
                       controller: noteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Reason / Note',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Reason / Note'),
                         border: OutlineInputBorder(),
-                        hintText: 'Enter reason for this correction',
+                        hintText: context.tr('Enter reason for this correction'),
                       ),
                       maxLines: 2,
                     ),
@@ -188,7 +191,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(context.tr('Cancel')),
                 ),
                 ElevatedButton(
                   onPressed: _isLoading
@@ -227,8 +230,10 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                               Navigator.pop(context); // Close dialog
                               ModernAlert.show(
                                 context,
-                                title: 'Correction Applied!',
-                                message: 'Attendance record updated and audit trail saved.',
+                                title: context.tr('Correction Applied!'),
+                                message: context.tr(
+                                  'Attendance record updated and audit trail saved.',
+                                ),
                                 icon: Icons.check_circle_outline,
                                 iconColor: Colors.green,
                               );
@@ -240,7 +245,10 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Error: $displayMessage', style: const TextStyle(color: Colors.white)),
+                                  content: Text(
+                                    '${context.tr('Error')}: $displayMessage',
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -255,7 +263,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                           width: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Save Correction'),
+                      : Text(context.tr('Save Correction')),
                 ),
               ],
             );
@@ -272,10 +280,10 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
     final isOwnerOrAdmin = user?.isOwnerOrAdmin ?? false;
 
     final staff = _currentRecord['staffId'] ?? _currentRecord['employeeId'];
-    final employeeName = staff?['fullName'] ?? 'Staff Member';
-    final department = staff?['department'] ?? 'Operations';
-    final roleName = staff?['role'] ?? 'Employee';
-    final employeeCode = staff?['employeeCode'] ?? 'EMP-N/A';
+    final employeeName = staff?['fullName'] ?? context.tr('Staff Member');
+    final department = staff?['department'] ?? context.tr('Operations');
+    final roleName = staff?['role'] ?? context.tr('Employee');
+    final employeeCode = staff?['employeeCode'] ?? context.tr('EMP-N/A');
 
     final checkInVal = _currentRecord['checkInTime'] ?? _currentRecord['checkIn'];
     final checkOutVal = _currentRecord['checkOutTime'] ?? _currentRecord['checkOut'];
@@ -297,7 +305,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Attendance Detail'),
+        title: Text(context.tr('Attendance Detail')),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -466,7 +474,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                   children: [
                     _buildTimelineRow(
                       context: context,
-                      title: 'Check-In',
+                      title: context.tr('Check-In'),
                       time: _formatDateTime(checkInVal),
                       date: _formatFullDate(checkInVal),
                       location: inLocation != null 
@@ -480,7 +488,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                     const Divider(height: 32),
                     _buildTimelineRow(
                       context: context,
-                      title: 'Check-Out',
+                      title: context.tr('Check-Out'),
                       time: _formatDateTime(checkOutVal),
                       date: _formatFullDate(checkOutVal),
                       location: outLocation != null 
@@ -575,10 +583,12 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: Colors.grey.shade200),
                 ),
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
-                    'No manual corrections have been recorded for this log. The record matches initial device timestamps.',
+                    context.tr(
+                      'No manual corrections have been recorded for this log. The record matches initial device timestamps.',
+                    ),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
                   ),
@@ -609,7 +619,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 4),
-                          Text('Reason: $reason', style: const TextStyle(fontSize: 12, color: Colors.black)),
+                          Text('${context.tr('Reason:')} $reason', style: const TextStyle(fontSize: 12, color: Colors.black)),
                           const SizedBox(height: 2),
                           Text(
                             'Updated status to: ${corr['newStatus'] ?? 'PRESENT'}',

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/core.dart';
 import '../../../profile/presentation/widgets/profile_bottom_sheet.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../app/router/route_paths.dart';
@@ -24,10 +23,14 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Text(context.tr('Dashboard')),
       ),
       body: isStaff
-          ? _StaffDashboard(isDark: isDark, theme: theme, userName: user?.displayName ?? 'Staff')
+          ? _StaffDashboard(
+              isDark: isDark,
+              theme: theme,
+              userName: user?.displayName ?? context.tr('Staff'),
+            )
           : _ManagerDashboard(isDark: isDark, theme: theme),
     );
   }
@@ -54,23 +57,23 @@ class _ManagerDashboard extends StatelessWidget {
           const SizedBox(height: 28),
 
           // Quick Stats Row
-          const SectionHeader(title: 'Quick Stats'),
+          SectionHeader(title: context.tr('Quick Stats')),
           const SizedBox(height: 14),
           _QuickStatsRow(isDark: isDark),
           const SizedBox(height: 28),
 
           // Live Status
-          const SectionHeader(title: 'Staff Attendance Summary'),
+          SectionHeader(title: context.tr('Staff Attendance Summary')),
           const SizedBox(height: 14),
           _StaffStatusRow(isDark: isDark),
           const SizedBox(height: 28),
 
           // Recent Activity
           SectionHeader(
-            title: 'Recent Activity',
+            title: context.tr('Recent Activity'),
             action: TextButton(
               onPressed: () {},
-              child: const Text('View All'),
+              child: Text(context.tr('View All')),
             ),
           ),
           const SizedBox(height: 8),
@@ -78,9 +81,9 @@ class _ManagerDashboard extends StatelessWidget {
             icon: Icons.receipt_long_rounded,
             iconBgColor: AppTheme.primaryContainer,
             iconColor: AppTheme.primary,
-            title: 'Order #1042',
-            subtitle: '2 items · \$45.00',
-            time: 'Just now',
+            title: context.tr('Order #1042'),
+            subtitle: context.tr('2 items · \$45.00'),
+            time: context.tr('Just now'),
             isDark: isDark,
           ),
           const SizedBox(height: 10),
@@ -88,9 +91,9 @@ class _ManagerDashboard extends StatelessWidget {
             icon: Icons.person_add_rounded,
             iconBgColor: AppTheme.successSurface,
             iconColor: AppTheme.success,
-            title: 'Staff Check-in',
-            subtitle: 'Sok Dara arrived',
-            time: '15m ago',
+            title: context.tr('Staff Check-in'),
+            subtitle: context.tr('Sok Dara arrived'),
+            time: context.tr('15m ago'),
             isDark: isDark,
           ),
           const SizedBox(height: 10),
@@ -98,9 +101,9 @@ class _ManagerDashboard extends StatelessWidget {
             icon: Icons.receipt_long_rounded,
             iconBgColor: AppTheme.primaryContainer,
             iconColor: AppTheme.primary,
-            title: 'Order #1041',
-            subtitle: '1 item · \$12.50',
-            time: '1h ago',
+            title: context.tr('Order #1041'),
+            subtitle: context.tr('1 item · \$12.50'),
+            time: context.tr('1h ago'),
             isDark: isDark,
           ),
         ],
@@ -146,7 +149,7 @@ class _HeroSalesCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Today's Gross Sales",
+                context.tr("Today's Gross Sales"),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: Colors.white.withOpacity(0.75),
                   letterSpacing: 0.2,
@@ -189,11 +192,11 @@ class _HeroSalesCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _HeroStat(title: 'Orders', value: '24', theme: theme),
+              _HeroStat(title: context.tr('Orders'), value: '24', theme: theme),
               Container(width: 1, height: 32, color: Colors.white24),
-              _HeroStat(title: 'Avg. Value', value: '\$52.08', theme: theme),
+              _HeroStat(title: context.tr('Avg. Value'), value: '\$52.08', theme: theme),
               Container(width: 1, height: 32, color: Colors.white24),
-              _HeroStat(title: 'Refunds', value: '\$0.00', theme: theme),
+              _HeroStat(title: context.tr('Refunds'), value: '\$0.00', theme: theme),
             ],
           ),
         ],
@@ -245,7 +248,7 @@ class _QuickStatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.shopping_bag_rounded,
-            label: 'Products',
+            label: context.tr('Products'),
             value: '48',
             iconColor: AppTheme.info,
             bgColor: AppTheme.infoSurface,
@@ -256,7 +259,7 @@ class _QuickStatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.people_rounded,
-            label: 'Staff',
+            label: context.tr('Staff'),
             value: '6',
             iconColor: AppTheme.warning,
             bgColor: AppTheme.warningSurface,
@@ -267,7 +270,7 @@ class _QuickStatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.check_circle_rounded,
-            label: 'Present',
+            label: context.tr('Present'),
             value: '5',
             iconColor: AppTheme.success,
             bgColor: AppTheme.successSurface,
@@ -344,11 +347,11 @@ class _StaffStatusRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _StaffStatusChip(icon: Icons.check_circle_rounded, label: '5 Present', color: AppTheme.success),
+        _StaffStatusChip(icon: Icons.check_circle_rounded, label: context.tr('5 Present'), color: AppTheme.success),
         const SizedBox(width: 10),
-        _StaffStatusChip(icon: Icons.schedule_rounded, label: '1 Late', color: AppTheme.warning),
+        _StaffStatusChip(icon: Icons.schedule_rounded, label: context.tr('1 Late'), color: AppTheme.warning),
         const SizedBox(width: 10),
-        _StaffStatusChip(icon: Icons.cancel_rounded, label: '0 Absent', color: AppTheme.error),
+        _StaffStatusChip(icon: Icons.cancel_rounded, label: context.tr('0 Absent'), color: AppTheme.error),
       ],
     );
   }
@@ -439,7 +442,7 @@ class _StaffDashboard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome back,',
+                        context.tr('Welcome back,'),
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: Colors.white.withOpacity(0.8),
                         ),
@@ -489,7 +492,7 @@ class _StaffDashboard extends StatelessWidget {
           const SizedBox(height: 28),
 
           // ── Today's Shift Card
-          const SectionHeader(title: 'Today’s Shift Status'),
+          SectionHeader(title: context.tr('Today’s Shift Status')),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(20),
@@ -518,14 +521,14 @@ class _StaffDashboard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Shift Active',
+                        context.tr('Shift Active'),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Clocked in at 08:30 AM',
+                        context.tr('Clocked in at 08:30 AM'),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: textSecondary,
                         ),
@@ -534,7 +537,7 @@ class _StaffDashboard extends StatelessWidget {
                   ),
                 ),
                 StatusBadge(
-                  label: 'ON-SITE',
+                  label: context.tr('ON-SITE'),
                   color: AppTheme.success,
                   backgroundColor: AppTheme.successSurface,
                 ),
@@ -548,9 +551,9 @@ class _StaffDashboard extends StatelessWidget {
             children: [
               Expanded(
                 child: _PersonalStatCard(
-                  title: 'Attendance',
-                  value: '22 Days',
-                  subtitle: 'Present this month',
+                  title: context.tr('Attendance'),
+                  value: context.tr('22 Days'),
+                  subtitle: context.tr('Present this month'),
                   icon: Icons.calendar_today_rounded,
                   color: AppTheme.info,
                   isDark: isDark,
@@ -559,9 +562,9 @@ class _StaffDashboard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _PersonalStatCard(
-                  title: 'Est. Earnings',
+                  title: context.tr('Est. Earnings'),
                   value: '\$480.00',
-                  subtitle: 'Payday: Jun 30',
+                  subtitle: context.tr('Payday: Jun 30'),
                   icon: Icons.payments_outlined,
                   color: Colors.deepPurple,
                   isDark: isDark,
@@ -572,15 +575,15 @@ class _StaffDashboard extends StatelessWidget {
           const SizedBox(height: 28),
 
           // ── Notifications/Pending Updates
-          const SectionHeader(title: 'Recent Notifications'),
+          SectionHeader(title: context.tr('Recent Notifications')),
           const SizedBox(height: 12),
           _ActivityTile(
             icon: Icons.campaign_rounded,
             iconBgColor: AppTheme.infoSurface,
             iconColor: AppTheme.info,
-            title: 'New Policy Update',
-            subtitle: 'New check-in radius updated to 50m.',
-            time: '2h ago',
+            title: context.tr('New Policy Update'),
+            subtitle: context.tr('New check-in radius updated to 50m.'),
+            time: context.tr('2h ago'),
             isDark: isDark,
           ),
           const SizedBox(height: 10),
@@ -588,9 +591,9 @@ class _StaffDashboard extends StatelessWidget {
             icon: Icons.task_alt_rounded,
             iconBgColor: AppTheme.successSurface,
             iconColor: AppTheme.success,
-            title: 'Payslip Available',
-            subtitle: 'Your payslip for May is now ready to view.',
-            time: '1d ago',
+            title: context.tr('Payslip Available'),
+            subtitle: context.tr('Your payslip for May is now ready to view.'),
+            time: context.tr('1d ago'),
             isDark: isDark,
           ),
         ],

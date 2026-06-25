@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:crypto/crypto.dart';
+import '../../../../core/core.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/errors/failures.dart';
 import '../providers/attendance_provider.dart';
@@ -84,8 +85,8 @@ class _BeautyScannerWidgetState extends ConsumerState<BeautyScannerWidget>
         if (mounted) {
           ModernAlert.show(
             context,
-            title: 'Success!',
-            message: 'You have clocked in successfully.',
+            title: context.tr('Success!'),
+            message: context.tr('You have clocked in successfully.'),
             icon: Icons.check_circle_outline,
             iconColor: Colors.green,
           );
@@ -103,7 +104,7 @@ class _BeautyScannerWidgetState extends ConsumerState<BeautyScannerWidget>
       if (mounted) {
         ModernAlert.show(
           context,
-          title: 'Check-in Failed',
+          title: context.tr('Check-in Failed'),
           message: displayMessage,
           icon: Icons.error_outline,
           iconColor: Colors.red,
@@ -194,7 +195,7 @@ class _BeautyScannerWidgetState extends ConsumerState<BeautyScannerWidget>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Scan Attendance QR Code',
+                context.tr('Scan Attendance QR Code'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -204,7 +205,9 @@ class _BeautyScannerWidgetState extends ConsumerState<BeautyScannerWidget>
               ),
               const SizedBox(height: 8),
               Text(
-                'Align the shop QR code within the frame to check in automatically',
+                context.tr(
+                  'Align the shop QR code within the frame to check in automatically',
+                ),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white70,
                     ),
@@ -256,7 +259,7 @@ class _BeautyScannerWidgetState extends ConsumerState<BeautyScannerWidget>
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -266,7 +269,7 @@ class _BeautyScannerWidgetState extends ConsumerState<BeautyScannerWidget>
                         ),
                         SizedBox(height: 16),
                         Text(
-                          'Checking In...',
+                          context.tr('Checking In...'),
                           style: TextStyle(
                             color: Colors.black87,
                             fontWeight: FontWeight.w600,
