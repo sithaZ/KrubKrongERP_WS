@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -23,6 +24,9 @@ final sharedPreferencesProvider =
 
 /// Network info provider
 final networkInfoProvider = Provider<NetworkInfo>((ref) {
+  if (kIsWeb) {
+    return const WebNetworkInfoImpl();
+  }
   return NetworkInfoImpl(InternetConnectionChecker());
 });
 

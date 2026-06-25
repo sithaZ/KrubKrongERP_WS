@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../../core/errors/failures.dart' as app_errors;
 import '../../../../core/constants/api_constants.dart';
@@ -174,7 +173,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
     }
     if (e.type == DioExceptionType.connectionError ||
-        e.error is SocketException) {
+        e.error?.toString().contains('SocketException') == true) {
       throw app_errors.NetworkException(
         'No internet connection. Please check your network.',
       );

@@ -19,3 +19,13 @@ class NetworkInfoImpl implements NetworkInfo {
     (status) => status == InternetConnectionStatus.connected,
   );
 }
+
+class WebNetworkInfoImpl implements NetworkInfo {
+  const WebNetworkInfoImpl();
+
+  @override
+  Future<bool> get isConnected => Future.value(true);
+
+  @override
+  Stream<bool> get onConnectionChange => Stream.value(true);
+}

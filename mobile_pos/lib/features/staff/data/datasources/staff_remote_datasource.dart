@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../../core/errors/failures.dart' as app_errors;
 import '../models/employee_model.dart';
@@ -79,7 +78,7 @@ class StaffRemoteDataSourceImpl implements StaffRemoteDataSource {
         e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||
         e.type == DioExceptionType.sendTimeout ||
-        e.error is SocketException) {
+        e.error?.toString().contains('SocketException') == true) {
       return app_errors.NetworkException('No internet connection');
     }
 
