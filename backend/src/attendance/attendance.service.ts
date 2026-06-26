@@ -226,6 +226,7 @@ export class AttendanceService {
 
       if (settings) {
         const distance = this.calculateDistance(dto.lat, dto.lng, settings.coordinates.lat, settings.coordinates.lng);
+        console.log(`Self Check-In: Client location: (${dto.lat}, ${dto.lng}), Pinned Shop: (${settings.coordinates.lat}, ${settings.coordinates.lng}), Calculated Distance: ${Math.round(distance)}m, Allowed Radius: ${settings.radius}m`);
         if (distance > settings.radius) {
           throw new BadRequestException(`You are currently too far from the shop (${Math.round(distance)}m). Please move closer (within ${settings.radius}m) to check in!`);
         }
@@ -303,6 +304,7 @@ export class AttendanceService {
 
         if (dto.lat && dto.lng) {
           const distance = this.calculateDistance(dto.lat, dto.lng, settings.coordinates.lat, settings.coordinates.lng);
+          console.log(`QR Check-In: Client location: (${dto.lat}, ${dto.lng}), Pinned Shop: (${settings.coordinates.lat}, ${settings.coordinates.lng}), Calculated Distance: ${Math.round(distance)}m, Allowed Radius: ${settings.radius}m`);
           if (distance > settings.radius) {
             throw new BadRequestException(`You are currently too far from the shop (${Math.round(distance)}m). Please move closer (within ${settings.radius}m) to check in!`);
           }
@@ -382,6 +384,7 @@ export class AttendanceService {
     
     if (settings && dto.lat && dto.lng) {
       const distance = this.calculateDistance(dto.lat, dto.lng, settings.coordinates.lat, settings.coordinates.lng);
+      console.log(`Check-Out: Client location: (${dto.lat}, ${dto.lng}), Pinned Shop: (${settings.coordinates.lat}, ${settings.coordinates.lng}), Calculated Distance: ${Math.round(distance)}m, Allowed Radius: ${settings.radius}m`);
       if (distance > settings.radius) {
         throw new BadRequestException(`You are currently too far from the shop (${Math.round(distance)}m) to check out. Please move closer (within ${settings.radius}m)!`);
       }
@@ -962,13 +965,20 @@ export class AttendanceService {
   }
 
   async updateShopSettings(dto: any) {
+    console.log('updateShopSettings input payload:', JSON.stringify(dto));
     let settings = await this.shopSettingsModel.findOne();
     if (!settings) {
       settings = new this.shopSettingsModel(dto);
     } else {
       Object.assign(settings, dto);
+      if (dto.coordinates) {
+        // Explicitly tell Mongoose that coordinates field has been modified
+        settings.markModified('coordinates');
+      }
     }
-    return settings.save();
+    const saved = await settings.save();
+    console.log('Saved ShopSettings in DB:', JSON.stringify(saved));
+    return saved;
   }
 
   async findByStaffAndDate(staffId: string, dateStr: string, currentUser: RequestUser) {
