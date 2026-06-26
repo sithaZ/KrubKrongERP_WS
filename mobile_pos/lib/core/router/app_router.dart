@@ -12,8 +12,9 @@ import '../../features/staff/presentation/pages/add_staff_screen.dart';
 import '../../features/staff/presentation/pages/staff_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_screen.dart';
 import '../../features/attendance/presentation/pages/attendance_detail_screen.dart';
-import '../../features/order/presentation/pages/order_screen.dart';
 import '../../features/inventory/presentation/pages/inventory_screen.dart';
+import '../../features/inventory/presentation/pages/products_screen.dart';
+import '../../features/order/presentation/pages/order_screen.dart';
 import '../../features/settings/presentation/pages/settings_screen.dart';
 import '../widgets/placeholder_screen.dart';
 

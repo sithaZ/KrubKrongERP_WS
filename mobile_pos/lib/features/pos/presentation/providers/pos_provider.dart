@@ -25,6 +25,14 @@ class PosApiService {
     );
   }
 
+  Future<List<Product>> fetchAllProducts({String? search}) async {
+    return _fetchProducts(
+      search: search,
+      activeOnly: false,
+      inStockOnly: false,
+    );
+  }
+
   Future<List<Product>> _fetchProducts({
     String? search,
     required bool activeOnly,
@@ -55,6 +63,14 @@ class PosApiService {
     required double price,
     required int stockQuantity,
     String? imageUrl,
+    String? sku,
+    String? barcode,
+    String? description,
+    double? costPrice,
+    String? categoryId,
+    String? categoryName,
+    int? reorderLevel,
+    bool? isActive,
   }) async {
     final response = await _client.post(
       ApiConstants.productsEndpoint,
@@ -62,7 +78,15 @@ class PosApiService {
         'name': name.trim(),
         'price': price,
         'stockQuantity': stockQuantity,
-        'imageUrl': imageUrl?.trim() ?? '',
+        if (imageUrl != null) 'imageUrl': imageUrl.trim(),
+        if (sku != null && sku.trim().isNotEmpty) 'sku': sku.trim(),
+        if (barcode != null && barcode.trim().isNotEmpty) 'barcode': barcode.trim(),
+        if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
+        if (costPrice != null) 'costPrice': costPrice,
+        if (categoryId != null && categoryId.trim().isNotEmpty) 'categoryId': categoryId.trim(),
+        if (categoryName != null && categoryName.trim().isNotEmpty) 'categoryName': categoryName.trim(),
+        if (reorderLevel != null) 'reorderLevel': reorderLevel,
+        if (isActive != null) 'isActive': isActive,
       },
     );
 
@@ -75,6 +99,14 @@ class PosApiService {
     required double price,
     required int stockQuantity,
     String? imageUrl,
+    String? sku,
+    String? barcode,
+    String? description,
+    double? costPrice,
+    String? categoryId,
+    String? categoryName,
+    int? reorderLevel,
+    bool? isActive,
   }) async {
     final response = await _client.patch(
       '${ApiConstants.productsEndpoint}/$productId',
@@ -82,7 +114,26 @@ class PosApiService {
         'name': name.trim(),
         'price': price,
         'stockQuantity': stockQuantity,
-        'imageUrl': imageUrl?.trim() ?? '',
+        if (imageUrl != null) 'imageUrl': imageUrl.trim(),
+        if (sku != null && sku.trim().isNotEmpty) 'sku': sku.trim(),
+        if (barcode != null && barcode.trim().isNotEmpty) 'barcode': barcode.trim(),
+        if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
+        if (costPrice != null) 'costPrice': costPrice,
+        if (categoryId != null && categoryId.trim().isNotEmpty) 'categoryId': categoryId.trim(),
+        if (categoryName != null && categoryName.trim().isNotEmpty) 'categoryName': categoryName.trim(),
+        if (reorderLevel != null) 'reorderLevel': reorderLevel,
+        if (isActive != null) 'isActive': isActive,
+      },
+    );
+
+    return _mapProduct(Map<String, dynamic>.from(response.data as Map));
+  }
+
+  Future<Product> setProductStatus(String productId, bool isActive) async {
+    final response = await _client.patch(
+      '${ApiConstants.productsEndpoint}/$productId',
+      data: {
+        'isActive': isActive,
       },
     );
 
@@ -90,14 +141,7 @@ class PosApiService {
   }
 
   Future<Product> stopSellingProduct(String productId) async {
-    final response = await _client.patch(
-      '${ApiConstants.productsEndpoint}/$productId',
-      data: {
-        'isActive': false,
-      },
-    );
-
-    return _mapProduct(Map<String, dynamic>.from(response.data as Map));
+    return setProductStatus(productId, false);
   }
 
   Future<Product> adjustProductStock({
@@ -291,89 +335,193 @@ class CartState {
   }
 }
 
-/// Cart notifier
-class CartNotifier extends StateNotifier<CartState> {
-  CartNotifier() : super(const CartState());
+/// Selected table provider
+final selectedTableProvider = StateProvider<String>((ref) => 'Table 1');
 
-  void addToCart(Product product) {
-    final existingIndex = state.items.indexWhere(
+/// List of tables provider
+final tablesListProvider = StateProvider<List<String>>((ref) => [
+  'Table 1',
+  'Table 2',
+  'Table 3',
+  'Table 4',
+  'Table 5',
+  'Table 6',
+  'Table 7',
+  'Table 8',
+  'Table 9',
+  'Table 10',
+  'Take Away 1',
+  'Take Away 2',
+  'Take Away 3',
+  'Take Away 4',
+  'Take Away 5',
+]);
+
+/// Table carts notifier
+class TableCartsNotifier extends StateNotifier<Map<String, CartState>> {
+  TableCartsNotifier() : super(const {});
+
+  void addToCart(String tableId, Product product) {
+    final currentCart = state[tableId] ?? const CartState();
+    final existingIndex = currentCart.items.indexWhere(
       (item) => item.product.id == product.id,
     );
 
+    CartState updatedCart;
     if (existingIndex >= 0) {
-      final nextQuantity = state.items[existingIndex].quantity + 1;
+      final nextQuantity = currentCart.items[existingIndex].quantity + 1;
       if (nextQuantity > product.stockQuantity) {
-        state = state.copyWith(error: 'Not enough stock for ${product.name}');
-        return;
+        updatedCart = currentCart.copyWith(
+          error: 'Not enough stock for ${product.name}',
+        );
+      } else {
+        final updatedItems = [...currentCart.items];
+        updatedItems[existingIndex] = CartItem(
+          product: product,
+          quantity: nextQuantity,
+        );
+        updatedCart = currentCart.copyWith(items: updatedItems, error: null);
       }
-
-      final updatedItems = [...state.items];
-      updatedItems[existingIndex] = CartItem(
-        product: product,
-        quantity: nextQuantity,
-      );
-      state = state.copyWith(items: updatedItems, error: null);
     } else {
       if (!product.isInStock) {
-        state = state.copyWith(error: '${product.name} is out of stock');
-        return;
+        updatedCart = currentCart.copyWith(
+          error: '${product.name} is out of stock',
+        );
+      } else {
+        updatedCart = currentCart.copyWith(
+          items: [...currentCart.items, CartItem(product: product)],
+          error: null,
+        );
       }
-
-      state = state.copyWith(
-        items: [...state.items, CartItem(product: product)],
-        error: null,
-      );
     }
+
+    state = {
+      ...state,
+      tableId: updatedCart,
+    };
   }
 
-  void removeFromCart(String productId) {
-    state = state.copyWith(
-      items: state.items.where((item) => item.product.id != productId).toList(),
+  void removeFromCart(String tableId, String productId) {
+    final currentCart = state[tableId] ?? const CartState();
+    final updatedCart = currentCart.copyWith(
+      items: currentCart.items.where((item) => item.product.id != productId).toList(),
     );
+    state = {
+      ...state,
+      tableId: updatedCart,
+    };
   }
 
-  void updateQuantity(String productId, int quantity) {
+  void updateQuantity(String tableId, String productId, int quantity) {
+    final currentCart = state[tableId] ?? const CartState();
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(tableId, productId);
       return;
     }
 
-    final item = state.items.cast<CartItem?>().firstWhere(
+    final item = currentCart.items.cast<CartItem?>().firstWhere(
           (entry) => entry?.product.id == productId,
           orElse: () => null,
         );
 
+    CartState updatedCart;
     if (item != null && quantity > item.product.stockQuantity) {
-      state = state.copyWith(
+      updatedCart = currentCart.copyWith(
         error: 'Not enough stock for ${item.product.name}',
       );
-      return;
+    } else {
+      final updatedItems = currentCart.items.map((item) {
+        if (item.product.id == productId) {
+          return CartItem(product: item.product, quantity: quantity);
+        }
+        return item;
+      }).toList();
+      updatedCart = currentCart.copyWith(items: updatedItems, error: null);
     }
 
-    final updatedItems = state.items.map((item) {
-      if (item.product.id == productId) {
-        return CartItem(product: item.product, quantity: quantity);
-      }
-      return item;
-    }).toList();
+    state = {
+      ...state,
+      tableId: updatedCart,
+    };
+  }
 
-    state = state.copyWith(items: updatedItems, error: null);
+  void clearCart(String tableId) {
+    state = {
+      ...state,
+      tableId: const CartState(),
+    };
+  }
+
+  void clearError(String tableId) {
+    final currentCart = state[tableId] ?? const CartState();
+    if (currentCart.error != null) {
+      state = {
+        ...state,
+        tableId: currentCart.copyWith(error: null),
+      };
+    }
+  }
+}
+
+/// Table carts provider
+final tableCartsProvider = StateNotifierProvider<TableCartsNotifier, Map<String, CartState>>((ref) {
+  return TableCartsNotifier();
+});
+
+/// Cart notifier that keeps in sync with tableCartsProvider and selectedTableProvider
+class CartNotifier extends StateNotifier<CartState> {
+  CartNotifier(this.ref) : super(const CartState()) {
+    _sync();
+  }
+
+  final Ref ref;
+
+  void _sync() {
+    ref.listen<Map<String, CartState>>(tableCartsProvider, (prev, next) {
+      final selectedTable = ref.read(selectedTableProvider);
+      state = next[selectedTable] ?? const CartState();
+    });
+
+    ref.listen<String>(selectedTableProvider, (prev, next) {
+      final allCarts = ref.read(tableCartsProvider);
+      state = allCarts[next] ?? const CartState();
+    });
+
+    // Set initial state
+    final selectedTable = ref.read(selectedTableProvider);
+    final allCarts = ref.read(tableCartsProvider);
+    state = allCarts[selectedTable] ?? const CartState();
+  }
+
+  void addToCart(Product product) {
+    final selectedTable = ref.read(selectedTableProvider);
+    ref.read(tableCartsProvider.notifier).addToCart(selectedTable, product);
+  }
+
+  void removeFromCart(String productId) {
+    final selectedTable = ref.read(selectedTableProvider);
+    ref.read(tableCartsProvider.notifier).removeFromCart(selectedTable, productId);
+  }
+
+  void updateQuantity(String productId, int quantity) {
+    final selectedTable = ref.read(selectedTableProvider);
+    ref.read(tableCartsProvider.notifier).updateQuantity(selectedTable, productId, quantity);
   }
 
   void clearCart() {
-    state = const CartState();
+    final selectedTable = ref.read(selectedTableProvider);
+    ref.read(tableCartsProvider.notifier).clearCart(selectedTable);
   }
 
   void clearError() {
-    if (state.error != null) {
-      state = state.copyWith(error: null);
-    }
+    final selectedTable = ref.read(selectedTableProvider);
+    ref.read(tableCartsProvider.notifier).clearError(selectedTable);
   }
 }
 
 /// Cart provider
 final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
-  return CartNotifier();
+  return CartNotifier(ref);
 });
 
 final posApiServiceProvider = Provider<PosApiService>((ref) {
@@ -391,6 +539,14 @@ final posProductsProvider = FutureProvider<List<Product>>((ref) async {
 
 final inventoryProductsProvider = FutureProvider<List<Product>>((ref) async {
   return ref.watch(posApiServiceProvider).fetchInventoryProducts();
+});
+
+final productSearchProvider = StateProvider<String>((ref) => '');
+
+final allProductsProvider = FutureProvider<List<Product>>((ref) async {
+  return ref.watch(posApiServiceProvider).fetchAllProducts(
+        search: ref.watch(productSearchProvider),
+      );
 });
 
 /// POS categories provider (mock for scaffold)

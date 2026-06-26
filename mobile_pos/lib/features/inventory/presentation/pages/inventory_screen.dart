@@ -106,15 +106,6 @@ class InventoryScreen extends ConsumerWidget {
   }
 }
 
-class ProductsScreen extends ConsumerWidget {
-  const ProductsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return const InventoryScreen();
-  }
-}
-
 class _InventoryHeader extends StatelessWidget {
   const _InventoryHeader({
     required this.totalProductsFuture,

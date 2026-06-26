@@ -35,7 +35,7 @@ dependencies:
   # Network
   dio: ^5.4.0
   internet_connection_checker: ^1.0.0
-  image_picker: ^1.1.2
+  image_picker: ^1.2.2
 
   # Utils
   freezed_annotation: ^2.4.1
