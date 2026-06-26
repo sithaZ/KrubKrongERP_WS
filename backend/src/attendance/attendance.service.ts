@@ -341,10 +341,10 @@ export class AttendanceService implements OnModuleInit {
               if (!isNaN(clientTimestamp)) {
                 const nowSeconds = Math.floor(Date.now() / 1000);
                 const age = nowSeconds - clientTimestamp;
-                console.log(`QR Token Verification: Server Time = ${nowSeconds}, Token Time = ${clientTimestamp}, Age Diff = ${age}s (Allowed: -600s to 600s)`);
+                console.log(`QR Token Verification: Server Time = ${nowSeconds}, Token Time = ${clientTimestamp}, Age Diff = ${age}s (Allowed: -900s to 900s)`);
                 
-                // Allow a window of 10 minutes in either direction to account for client-server clock skew
-                if (age >= -600 && age <= 600) {
+                // Allow a window of 15 minutes in either direction to account for client-server clock skew and 10-minute rotation cycle
+                if (age >= -900 && age <= 900) {
                   const expected = crypto
                     .createHash('sha256')
                     .update(`${settings.secretKey}:${clientTimestamp}`)
@@ -357,7 +357,7 @@ export class AttendanceService implements OnModuleInit {
                     console.log('QR Token hash mismatch. Client sent: ' + clientHash + ', expected: ' + expected);
                   }
                 } else {
-                  console.log(`QR Token rejected: Age difference ${age}s is outside the allowed 10 minutes window.`);
+                  console.log(`QR Token rejected: Age difference ${age}s is outside the allowed 15 minutes window.`);
                 }
               }
             }
