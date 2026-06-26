@@ -209,7 +209,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 error: (err, _) => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Text('Failed to load product catalog.\n$err'),
+                    child: Text('${context.tr('Failed to load product catalog.')}\n$err'),
                   ),
                 ),
               ),
@@ -733,23 +733,23 @@ class _ProductFormSheetState extends ConsumerState<_ProductFormSheet> {
                   const SizedBox(height: 12),
                   _buildField(
                     controller: _categoryController,
-                    label: 'Custom Category Name *',
+                    label: context.tr('Custom Category Name *'),
                     validator: (value) => _isCustomCategory && (value == null || value.trim().isEmpty)
-                        ? 'Custom category name is required'
+                        ? context.tr('Custom category name is required')
                         : null,
                   ),
                 ],
                 const SizedBox(height: 12),
                 _buildField(
                   controller: _descriptionController,
-                  label: 'Product Description',
+                  label: context.tr('Product Description'),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 16),
                 // Active/Inactive toggle
                 SwitchListTile(
-                  title: const Text('Available for Sale (Active)'),
-                  subtitle: const Text('Inactive products will not appear in the POS register'),
+                  title: Text(context.tr('Available for Sale (Active)')),
+                  subtitle: Text(context.tr('Inactive products will not appear in the POS register')),
                   value: _isActive,
                   onChanged: (val) {
                     setState(() {

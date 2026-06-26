@@ -24,6 +24,38 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
   late Map<String, dynamic> _currentRecord;
   bool _isLoading = false;
 
+  String _statusLabel(BuildContext context, String? status) {
+    switch (status?.toUpperCase()) {
+      case 'PRESENT':
+        return context.tr('Present');
+      case 'ABSENT':
+        return context.tr('Absent');
+      case 'LATE':
+        return context.tr('Late');
+      case 'HALF_DAY':
+        return context.tr('Half Day');
+      case 'LEAVE':
+        return context.tr('Leave');
+      case 'HOLIDAY':
+        return context.tr('Holiday');
+      default:
+        return status ?? '--';
+    }
+  }
+
+  String _sourceLabel(BuildContext context, String? source) {
+    switch (source?.toLowerCase()) {
+      case 'qr':
+        return context.tr('QR');
+      case 'mobile':
+        return context.tr('Mobile');
+      case 'manual':
+        return context.tr('Manual');
+      default:
+        return context.tr('Unknown');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -146,7 +178,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                       items: ['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'LEAVE', 'HOLIDAY']
                           .map((role) => DropdownMenuItem(
                                 value: role,
-                                child: Text(role),
+                                child: Text(_statusLabel(context, role)),
                               ))
                           .toList(),
                       onChanged: (val) {
@@ -347,7 +379,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'ID: $employeeCode',
+                            '${context.tr('ID')}: $employeeCode',
                             style: TextStyle(fontSize: 12, color: Colors.blue.shade700, fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -360,7 +392,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        _currentRecord['attendanceStatus'] ?? 'PRESENT',
+                        _statusLabel(context, _currentRecord['attendanceStatus'] ?? 'PRESENT'),
                         style: TextStyle(
                           color: _getStatusColor(_currentRecord['attendanceStatus']),
                           fontWeight: FontWeight.bold,
@@ -392,12 +424,12 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Shift: ${staff['shiftName']}',
+                              '${context.tr('Shift')}: ${staff['shiftName']}',
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Schedule: ${staff['shiftStartTime']} - ${staff['shiftEndTime']} (Grace Period: ${staff['shiftGracePeriodMinutes'] ?? 15} mins)',
+                              '${context.tr('Schedule')}: ${staff['shiftStartTime']} - ${staff['shiftEndTime']} (${context.tr('Grace Period')}: ${staff['shiftGracePeriodMinutes'] ?? 15} ${context.tr('mins')})',
                               style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                             ),
                           ],
@@ -415,7 +447,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
               children: [
                 Expanded(
                   child: _buildMetricTile(
-                    label: 'Worked',
+                    label: context.tr('Worked'),
                     value: '${workHours.toStringAsFixed(1)}h',
                     icon: Icons.timer_outlined,
                     color: Colors.green,
@@ -424,7 +456,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildMetricTile(
-                    label: 'Overtime',
+                    label: context.tr('Overtime'),
                     value: '${overtime.toStringAsFixed(1)}h',
                     icon: Icons.add_circle_outline,
                     color: Colors.blue,
@@ -437,7 +469,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
               children: [
                 Expanded(
                   child: _buildMetricTile(
-                    label: 'Late',
+                    label: context.tr('Late'),
                     value: '${lateMins}m',
                     icon: Icons.alarm_on,
                     color: Colors.orange,
@@ -446,7 +478,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildMetricTile(
-                    label: 'Early Leave',
+                    label: context.tr('Early Leave'),
                     value: '${earlyLeave}m',
                     icon: Icons.exit_to_app,
                     color: Colors.amber,
@@ -457,8 +489,8 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
             const SizedBox(height: 24),
 
             // 3. Shift Timeline & Tracking Sources
-            const Text(
-              'Timeline & Tracking Details',
+            Text(
+              context.tr('Timeline & Tracking Details'),
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
@@ -479,9 +511,9 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                       date: _formatFullDate(checkInVal),
                       location: inLocation != null 
                           ? '${inLocation['lat'].toStringAsFixed(4)}, ${inLocation['lng'].toStringAsFixed(4)}' 
-                          : 'No location registered',
+                          : context.tr('No location registered'),
                       source: source,
-                      status: hasCheckIn ? 'Completed' : 'Missing',
+                      status: hasCheckIn ? context.tr('Completed') : context.tr('Missing'),
                       icon: Icons.login,
                       iconColor: Colors.green,
                     ),
@@ -493,9 +525,9 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                       date: _formatFullDate(checkOutVal),
                       location: outLocation != null 
                           ? '${outLocation['lat'].toStringAsFixed(4)}, ${outLocation['lng'].toStringAsFixed(4)}' 
-                          : 'No location registered',
+                          : context.tr('No location registered'),
                       source: source,
-                      status: hasCheckOut ? 'Completed' : 'Missing',
+                      status: hasCheckOut ? context.tr('Completed') : context.tr('Missing'),
                       icon: Icons.logout,
                       iconColor: Colors.blue,
                     ),
@@ -506,8 +538,8 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
             const SizedBox(height: 24),
 
             // 4. GPS & Geofence Details
-            const Text(
-              'Geofencing Validation',
+            Text(
+              context.tr('Geofencing Validation'),
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
@@ -529,14 +561,18 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          locStatus == 'on_site' ? 'Check-In verified on site' : 'Check-In completed remotely',
+                          locStatus == 'on_site'
+                              ? context.tr('Check-In verified on site')
+                              : context.tr('Check-In completed remotely'),
                           style: TextStyle(fontWeight: FontWeight.bold, color: locStatus == 'on_site' ? Colors.green.shade900 : Colors.orange.shade900),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'KrubKrong ERP enforces geographic validation for employees clocking in to ensure they are on premises.',
+                    Text(
+                      context.tr(
+                        'KrubKrong ERP enforces geographic validation for employees clocking in to ensure they are on premises.',
+                      ),
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
@@ -547,8 +583,8 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
 
             // 5. Notes Card
             if (_currentRecord['note'] != null && _currentRecord['note'].toString().trim().isNotEmpty) ...[
-              const Text(
-                'Notes',
+              Text(
+                context.tr('Notes'),
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 12),
@@ -571,8 +607,8 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
             ],
 
             // 6. Correction History Audit Trail Log
-            const Text(
-              'Correction History & Audit Trail',
+            Text(
+              context.tr('Correction History & Audit Trail'),
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
@@ -599,8 +635,8 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                 children: corrections.map((corr) {
                   final correctedAt = corr['correctedAt'] != null 
                       ? DateFormat('MMM d, yyyy @ hh:mm a').format(DateTime.parse(corr['correctedAt']))
-                      : 'Unknown';
-                  final reason = corr['reason'] ?? 'Manager adjustment';
+                      : context.tr('Unknown');
+                  final reason = corr['reason'] ?? context.tr('Manager adjustment');
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -612,7 +648,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                     child: ListTile(
                       leading: const Icon(Icons.history, color: Colors.orange),
                       title: Text(
-                        'Corrected: $correctedAt',
+                        '${context.tr('Corrected')}: $correctedAt',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       subtitle: Column(
@@ -622,7 +658,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                           Text('${context.tr('Reason:')} $reason', style: const TextStyle(fontSize: 12, color: Colors.black)),
                           const SizedBox(height: 2),
                           Text(
-                            'Updated status to: ${corr['newStatus'] ?? 'PRESENT'}',
+                            '${context.tr('Updated status to')}: ${_statusLabel(context, corr['newStatus'] ?? 'PRESENT')}',
                             style: const TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                         ],
@@ -710,7 +746,7 @@ class _AttendanceDetailScreenState extends ConsumerState<AttendanceDetailScreen>
                         Icon(_getSourceIcon(source), size: 12, color: Colors.grey.shade600),
                         const SizedBox(width: 4),
                         Text(
-                          source.toUpperCase(),
+                          _sourceLabel(context, source),
                           style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
                         ),
                       ],

@@ -187,7 +187,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 error: (error, stackTrace) => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Text('Failed to load register catalog.\n$error'),
+                    child: Text('${context.tr('Failed to load register catalog.')}\n$error'),
                   ),
                 ),
               ),
@@ -200,7 +200,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final name = user?.name ?? 'Cashier';
+    final name = user?.name ?? context.tr('Cashier');
     final theme = Theme.of(context);
     final cart = ref.watch(cartProvider);
 
@@ -227,7 +227,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   const Icon(Icons.computer_rounded, color: AppTheme.primary, size: 18),
                   const SizedBox(width: 6),
                   Text(
-                    'Active Register',
+                    context.tr('Active Register'),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: AppTheme.primary,
                       fontWeight: FontWeight.bold,
@@ -237,7 +237,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                '$greeting, $name',
+                '${context.tr(greeting)}, $name',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
@@ -1247,7 +1247,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               ref.read(cartProvider.notifier).clearCart();
                             },
                             icon: const Icon(Icons.delete_sweep_rounded, color: Colors.red),
-                            label: const Text('Clear', style: TextStyle(color: Colors.red)),
+                            label: Text(
+                              context.tr('Clear'),
+                              style: const TextStyle(color: Colors.red),
+                            ),
                           ),
                         ],
                       ),
@@ -1417,7 +1420,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                                   children: [
                                                     Icon(Icons.restaurant, color: orderType == 'Dine In' ? Colors.white : Colors.grey, size: 16),
                                                     const SizedBox(width: 6),
-                                                    Text('Dine In', style: TextStyle(color: orderType == 'Dine In' ? Colors.white : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                    Text(context.tr('Dine In'), style: TextStyle(color: orderType == 'Dine In' ? Colors.white : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
                                                   ],
                                                 ),
                                               ),
@@ -1438,7 +1441,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                                   children: [
                                                     Icon(Icons.takeout_dining, color: orderType == 'Take Away' ? Colors.white : Colors.grey, size: 16),
                                                     const SizedBox(width: 6),
-                                                    Text('Take Away', style: TextStyle(color: orderType == 'Take Away' ? Colors.white : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                    Text(context.tr('Take Away'), style: TextStyle(color: orderType == 'Take Away' ? Colors.white : Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
                                                   ],
                                                 ),
                                               ),
@@ -1465,7 +1468,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                         keyboardType: TextInputType.text,
                                         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                                         decoration: InputDecoration(
-                                          hintText: 'e.g. Table 5, Queue 12',
+                                          hintText: context.tr('e.g. Table 5, Queue 12'),
                                           filled: true,
                                           fillColor: isDark ? AppTheme.darkCard : Colors.grey.shade100,
                                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -1501,7 +1504,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                         children: [
                                           Icon(Icons.payments_outlined, color: paymentMethod == 'Cash' ? Colors.white : Colors.grey),
                                           const SizedBox(height: 4),
-                                          Text('Cash', style: TextStyle(color: paymentMethod == 'Cash' ? Colors.white : (isDark ? Colors.white70 : Colors.black87), fontWeight: FontWeight.bold, fontSize: 12)),
+                                          Text(context.tr('Cash'), style: TextStyle(color: paymentMethod == 'Cash' ? Colors.white : (isDark ? Colors.white70 : Colors.black87), fontWeight: FontWeight.bold, fontSize: 12)),
                                         ],
                                       ),
                                     ),
@@ -1522,7 +1525,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                         children: [
                                           Icon(Icons.credit_card_outlined, color: paymentMethod == 'Card' ? Colors.white : Colors.grey),
                                           const SizedBox(height: 4),
-                                          Text('Card', style: TextStyle(color: paymentMethod == 'Card' ? Colors.white : (isDark ? Colors.white70 : Colors.black87), fontWeight: FontWeight.bold, fontSize: 12)),
+                                          Text(context.tr('Card'), style: TextStyle(color: paymentMethod == 'Card' ? Colors.white : (isDark ? Colors.white70 : Colors.black87), fontWeight: FontWeight.bold, fontSize: 12)),
                                         ],
                                       ),
                                     ),
@@ -1543,7 +1546,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                         children: [
                                           Icon(Icons.qr_code_scanner_outlined, color: paymentMethod == 'QR Code' ? Colors.white : Colors.grey),
                                           const SizedBox(height: 4),
-                                          Text('QR Code', style: TextStyle(color: paymentMethod == 'QR Code' ? Colors.white : (isDark ? Colors.white70 : Colors.black87), fontWeight: FontWeight.bold, fontSize: 12)),
+                                          Text(context.tr('QR Code'), style: TextStyle(color: paymentMethod == 'QR Code' ? Colors.white : (isDark ? Colors.white70 : Colors.black87), fontWeight: FontWeight.bold, fontSize: 12)),
                                         ],
                                       ),
                                     ),
@@ -1625,7 +1628,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      cashReceived >= actualTotal ? 'Change Due:' : 'Remaining Balance:',
+                                      cashReceived >= actualTotal
+                                          ? context.tr('Change Due:')
+                                          : context.tr('Remaining Balance:'),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: cashReceived >= actualTotal ? AppTheme.success : Colors.amber.shade900,
@@ -1684,13 +1689,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                     if (val == 'WELCOME10') {
                                       setState(() {
                                         appliedCode = 'WELCOME10';
-                                        promoSuccess = 'Applied 10% Discount!';
+                                        promoSuccess = context.tr('Applied 10% Discount!');
                                         promoError = '';
                                       });
                                     } else if (val == 'DISCOUNT5') {
                                       setState(() {
                                         appliedCode = 'DISCOUNT5';
-                                        promoSuccess = 'Applied \$5.00 Off Discount!';
+                                        promoSuccess = context.tr('Applied \$5.00 Off Discount!');
                                         promoError = '';
                                       });
                                     } else if (val.isEmpty) {
@@ -1703,7 +1708,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                       setState(() {
                                         appliedCode = '';
                                         promoSuccess = '';
-                                        promoError = 'Invalid Code. Try WELCOME10 or DISCOUNT5.';
+                                        promoError = context.tr('Invalid Code. Try WELCOME10 or DISCOUNT5.');
                                       });
                                     }
                                   },
@@ -1809,13 +1814,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   try {
                                     final tableRef = tableNumberController.text.trim();
                                     final notesParts = [
-                                      'Order Type: $orderType',
-                                      if (tableRef.isNotEmpty) 'Table/Ref: $tableRef',
+                                      '${context.tr('Order Type')}: $orderType',
+                                      if (tableRef.isNotEmpty) '${context.tr('Table/Ref')}: $tableRef',
                                       if (paymentMethod == 'Cash') ...[
-                                        'Cash Tendered: \$${cashReceived.toStringAsFixed(2)}',
-                                        'Change Due: \$${changeDue.toStringAsFixed(2)}'
+                                        '${context.tr('Cash Tendered')}: \$${cashReceived.toStringAsFixed(2)}',
+                                        '${context.tr('Change Due:')} \$${changeDue.toStringAsFixed(2)}'
                                       ],
-                                      if (appliedCode.isNotEmpty) 'Promo applied: $appliedCode'
+                                      if (appliedCode.isNotEmpty) '${context.tr('Promo applied')}: $appliedCode'
                                     ];
 
                                     final order = await ref
@@ -1839,7 +1844,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text('Checkout failed: $error'),
+                                          content: Text('${context.tr('Checkout failed:')} $error'),
                                         ),
                                       );
                                     }
@@ -1885,7 +1890,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               children: [
                 Center(
                   child: Text(
-                    'Receipt: ${order.receiptNumber ?? order.id.substring(0, 8).toUpperCase()}',
+                    '${context.tr('Receipt')}: ${order.receiptNumber ?? order.id.substring(0, 8).toUpperCase()}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                 ),
@@ -1895,7 +1900,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Service Type:'),
+                    Text('${context.tr('Service Type')}:'),
                     Text(orderType, style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
@@ -1903,7 +1908,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Payment Mode:'),
+                    Text('${context.tr('Payment Mode')}:'),
                     Text(paymentMethod, style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
@@ -1911,7 +1916,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Grand Total:'),
+                    Text('${context.tr('Grand Total')}:'),
                     Text('\$${order.total.toStringAsFixed(2)}', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w800)),
                   ],
                 ),
@@ -1920,7 +1925,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Tendered:'),
+                      Text('${context.tr('Tendered')}:'),
                       Text('\$${cashReceived.toStringAsFixed(2)}'),
                     ],
                   ),
@@ -1928,7 +1933,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Change Returned:', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      Text('${context.tr('Change Returned')}:', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                       Text('\$${changeDue.toStringAsFixed(2)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -1936,9 +1941,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 12),
-                const Center(
+                Center(
                   child: Text(
-                    'Simulating thermal print receipt...',
+                    context.tr('Simulating thermal print receipt...'),
                     style: TextStyle(color: Colors.grey, fontSize: 11, fontStyle: FontStyle.italic),
                   ),
                 ),
@@ -1950,19 +1955,19 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Simulated Printing Receipt to Local Thermal Printer'),
+                  SnackBar(
+                    content: Text(context.tr('Simulated Printing Receipt to Local Thermal Printer')),
                     duration: Duration(seconds: 2),
                   ),
                 );
               },
               icon: const Icon(Icons.print_rounded, size: 18),
-              label: const Text('Print'),
+              label: Text(context.tr('Print')),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: AppTheme.primary),
               onPressed: () => Navigator.pop(context),
-              child: const Text('Done'),
+              child: Text(context.tr('Done')),
             ),
           ],
         );
@@ -2092,8 +2097,8 @@ class _ProductCard extends StatelessWidget {
                         ),
                         Text(
                           product.isInStock
-                              ? 'Stock: ${product.stockQuantity}'
-                              : 'Out of stock',
+                              ? '${context.tr('Stock')}: ${product.stockQuantity}'
+                              : context.tr('Out of stock'),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: product.isInStock
                                 ? (product.isLowStock ? Colors.orange : AppTheme.success)
