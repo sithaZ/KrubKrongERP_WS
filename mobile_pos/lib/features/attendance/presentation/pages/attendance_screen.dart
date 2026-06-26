@@ -643,7 +643,7 @@ class _RotatingQrWidgetState extends State<RotatingQrWidget> {
 
   void _resetTimer() {
     _generationTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    _secondsRemaining = 99999999999;
+    _secondsRemaining = 20;
     _token = _generateTokenString();
   }
 
