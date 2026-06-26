@@ -141,26 +141,26 @@ export class AttendanceController {
   // ───────────────────────────────────────────────────────────────────────────
   @Get('shop-settings')
   @Roles(Role.MANAGER, Role.OWNER, Role.ADMIN)
-  getShopSettingsLegacy() {
-    return this.attendanceService.getShopSettings();
+  getShopSettingsLegacy(@Request() req: any) {
+    return this.attendanceService.getShopSettings(req.user);
   }
 
   @Get('shop/settings')
   @Roles(Role.MANAGER, Role.OWNER, Role.ADMIN)
-  getShopSettings() {
-    return this.attendanceService.getShopSettings();
+  getShopSettings(@Request() req: any) {
+    return this.attendanceService.getShopSettings(req.user);
   }
 
   @Post('shop-settings')
   @Roles(Role.MANAGER, Role.OWNER, Role.ADMIN)
-  updateShopSettingsLegacy(@Body() dto: any) {
-    return this.attendanceService.updateShopSettings(dto);
+  updateShopSettingsLegacy(@Body() dto: any, @Request() req: any) {
+    return this.attendanceService.updateShopSettings(dto, req.user);
   }
 
   @Post('shop/settings')
   @Roles(Role.MANAGER, Role.OWNER, Role.ADMIN)
-  updateShopSettings(@Body() dto: any) {
-    return this.attendanceService.updateShopSettings(dto);
+  updateShopSettings(@Body() dto: any, @Request() req: any) {
+    return this.attendanceService.updateShopSettings(dto, req.user);
   }
 
   @Post('manual')

@@ -1,10 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class ShopSettings extends Document {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   shopName: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Company', required: false, index: true })
+  companyId?: Types.ObjectId;
 
   @Prop({ type: Object, required: true })
   coordinates: {

@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -36,7 +37,7 @@ const DEFAULT_SHIFT = {
 };
 
 @Injectable()
-export class AttendanceService {
+export class AttendanceService implements OnModuleInit {
   constructor(
     @InjectModel(Attendance.name)
     private attendanceModel: Model<Attendance>,
@@ -48,8 +49,98 @@ export class AttendanceService {
     private shiftModel: Model<Shift>,
   ) {}
 
+  async onModuleInit() {
+    try {
+      const indexes = await this.shopSettingsModel.collection.indexes();
+      const obsoleteShopNameIndex = indexes.find(
+        (index) => index.name === 'shopName_1' && index.unique,
+      );
+
+      if (obsoleteShopNameIndex) {
+        await this.shopSettingsModel.collection.dropIndex('shopName_1');
+        console.log(
+          'Dropped obsolete unique index shopName_1 from shopsettings collection.',
+        );
+      }
+    } catch (error) {
+      console.warn(
+        'Unable to verify or drop obsolete shopsettings index:',
+        error,
+      );
+    }
+  }
+
   private getNormalizedRole(user: RequestUser) {
     return normalizeRole(user.role);
+  }
+
+  private toObjectId(value?: string | Types.ObjectId | null) {
+    if (!value) return undefined;
+    if (value instanceof Types.ObjectId) return value;
+    if (!Types.ObjectId.isValid(value)) return undefined;
+    return new Types.ObjectId(value);
+  }
+
+  private async getLegacyShopSettings() {
+    return this.shopSettingsModel.findOne({
+      $or: [{ companyId: { $exists: false } }, { companyId: null }],
+    });
+  }
+
+  private async findShopSettingsForCompany(companyId?: string | Types.ObjectId | null) {
+    const resolvedCompanyId = this.toObjectId(companyId);
+    if (resolvedCompanyId) {
+      const scoped = await this.shopSettingsModel.findOne({
+        companyId: resolvedCompanyId,
+      });
+      if (scoped) {
+        return scoped;
+      }
+    }
+
+    return this.getLegacyShopSettings();
+  }
+
+  private async ensureShopSettingsForCompany(companyId?: string | Types.ObjectId | null) {
+    const resolvedCompanyId = this.toObjectId(companyId);
+    const existing = await this.findShopSettingsForCompany(resolvedCompanyId);
+    if (existing) {
+      if (resolvedCompanyId && !existing.companyId) {
+        const alreadyCloned = await this.shopSettingsModel.findOne({
+          companyId: resolvedCompanyId,
+        });
+        if (alreadyCloned) {
+          return alreadyCloned;
+        }
+
+        const clonedSettings = new this.shopSettingsModel({
+          shopName: existing.shopName,
+          companyId: resolvedCompanyId,
+          coordinates: existing.coordinates,
+          radius: existing.radius,
+          secretKey: existing.secretKey,
+          ownerId: existing.ownerId,
+          allowManagerSelfAttendance: existing.allowManagerSelfAttendance,
+          allowStaffSelfAttendance: existing.allowStaffSelfAttendance,
+        });
+        await clonedSettings.save();
+        return clonedSettings;
+      }
+      return existing;
+    }
+
+    const settings = new this.shopSettingsModel({
+      shopName: resolvedCompanyId
+        ? `Default Shop ${resolvedCompanyId.toString().slice(-6)}`
+        : 'Default Shop',
+      companyId: resolvedCompanyId,
+      coordinates: { lat: 0, lng: 0 },
+      radius: 50,
+      secretKey: 'krobkrong_secret_123',
+      ownerId: 'system',
+    });
+    await settings.save();
+    return settings;
   }
 
   private buildAttendanceFilter(currentUser: RequestUser) {
@@ -202,7 +293,7 @@ export class AttendanceService {
     }
 
     const employee = await this.findAccessibleEmployee(targetId, currentUser);
-    const settings = await this.getShopSettings();
+    const settings = await this.getShopSettingsForCompany(employee.companyId);
     let locationStatus: 'on_site' | 'remote' | 'unknown' = 'unknown';
 
     if (dto.selfCheckIn) {
@@ -380,7 +471,7 @@ export class AttendanceService {
     }
 
     const employee = await this.findAccessibleEmployee(targetId, currentUser);
-    const settings = await this.getShopSettings();
+    const settings = await this.getShopSettingsForCompany(employee.companyId);
     
     if (settings && dto.lat && dto.lng) {
       const distance = this.calculateDistance(dto.lat, dto.lng, settings.coordinates.lat, settings.coordinates.lng);
@@ -949,32 +1040,24 @@ export class AttendanceService {
   // ───────────────────────────────────────────────────────────────────────────
   // SHOP SETTINGS
   // ───────────────────────────────────────────────────────────────────────────
-  async getShopSettings() {
-    let settings = await this.shopSettingsModel.findOne();
-    if (!settings) {
-      settings = new this.shopSettingsModel({
-        shopName: 'Default Shop',
-        coordinates: { lat: 0, lng: 0 },
-        radius: 50,
-        secretKey: 'krobkrong_secret_123',
-        ownerId: 'system',
-      });
-      await settings.save();
-    }
-    return settings;
+  async getShopSettings(currentUser: RequestUser) {
+    return this.ensureShopSettingsForCompany(currentUser.companyId);
   }
 
-  async updateShopSettings(dto: any) {
+  async getShopSettingsForCompany(companyId?: string | Types.ObjectId | null) {
+    return this.ensureShopSettingsForCompany(companyId);
+  }
+
+  async updateShopSettings(dto: any, currentUser: RequestUser) {
     console.log('updateShopSettings input payload:', JSON.stringify(dto));
-    let settings = await this.shopSettingsModel.findOne();
-    if (!settings) {
-      settings = new this.shopSettingsModel(dto);
-    } else {
-      Object.assign(settings, dto);
-      if (dto.coordinates) {
-        // Explicitly tell Mongoose that coordinates field has been modified
-        settings.markModified('coordinates');
-      }
+    let settings = await this.ensureShopSettingsForCompany(currentUser.companyId);
+    Object.assign(settings, dto);
+    if (currentUser.companyId) {
+      settings.companyId = this.toObjectId(currentUser.companyId);
+    }
+    if (dto.coordinates) {
+      // Explicitly tell Mongoose that coordinates field has been modified
+      settings.markModified('coordinates');
     }
     const saved = await settings.save();
     console.log('Saved ShopSettings in DB:', JSON.stringify(saved));
